@@ -79,12 +79,12 @@ function Router() {
       <Route path="/jadwal-ruangan">{() => <ProtectedRoute component={JadwalRuangan} roles={["mahasiswa", "dosen", "plp", "admin"]} />}</Route>
 
       {/* PLP */}
+      <Route path="/plp/pengembalian">{() => <ProtectedRoute component={PlpRiwayatPengembalian} roles={["plp", "admin"]} />}</Route>
+      <Route path="/plp/stok">{() => <ProtectedRoute component={PlpStokLab} roles={["plp"]} />}</Route>
       <Route path="/plp/verifikasi">{() => <ProtectedRoute component={PlpVerifikasi} roles={["plp", "admin"]} />}</Route>
       <Route path="/plp/inventaris">{() => <ProtectedRoute component={AdminInventaris} roles={["plp"]} />}</Route>
       <Route path="/plp/permintaan">{() => <ProtectedRoute component={GudangManajemen} roles={["plp"]} />}</Route>
       <Route path="/plp/laporan">{() => <ProtectedRoute component={PlpLaporan} roles={["plp"]} />}</Route>
-      <Route path="/plp/riwayat-pengembalian">{() => <ProtectedRoute component={PlpRiwayatPengembalian} roles={["plp", "admin"]} />}</Route>
-      <Route path="/plp/stok-lab">{() => <ProtectedRoute component={PlpStokLab} roles={["plp"]} />}</Route>
 
       {/* Gudang */}
       <Route path="/gudang/manajemen">{() => <ProtectedRoute component={GudangManajemen} roles={["gudang", "admin"]} />}</Route>

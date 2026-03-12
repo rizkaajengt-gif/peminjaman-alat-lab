@@ -65,11 +65,11 @@ const NAV_ITEMS: NavItem[] = [
   // Admin group - Operasional
   { title: "Inventaris Alat & Bahan", href: "/admin/inventaris", icon: Database, roles: ["admin", "plp"], group: "Operasional" },
   { title: "Verifikasi Pengajuan", href: "/plp/verifikasi", icon: BookOpenCheck, roles: ["admin", "plp"], group: "Operasional" },
-  { title: "Riwayat & Pengembalian", href: "/plp/riwayat-pengembalian", icon: FileBox, roles: ["plp", "admin"], group: "Operasional" },
+  { title: "Riwayat & Pengembalian", href: "/plp/pengembalian", icon: FileBox, roles: ["plp", "admin"], group: "Operasional" },
   { title: "Laporan & Statistik", href: "/admin/laporan", icon: BarChart3, roles: ["admin"], group: "Operasional" },
   { title: "Kirim Notifikasi", href: "/admin/notifikasi", icon: BellRing, roles: ["admin"], group: "Operasional" },
   { title: "Laporan Lab Saya", href: "/plp/laporan", icon: BarChart3, roles: ["plp"], group: "Operasional" },
-  { title: "Stok Lab & Transfer", href: "/plp/stok-lab", icon: Package, roles: ["plp"], group: "Operasional" },
+  { title: "Stok Lab & Transfer", href: "/plp/stok", icon: Package, roles: ["plp"], group: "Operasional" },
 
   // Mahasiswa/Dosen group
   { title: "Pinjam Alat", href: "/mahasiswa/peminjaman", icon: ClipboardList, roles: ["mahasiswa", "dosen"], group: "Layanan" },
