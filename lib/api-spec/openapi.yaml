@@ -1,22 +1,46 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API for Peminjaman Laboratorium Terpadu Poltekkes Tasikmalaya
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User management
+  - name: laboratorium
+    description: Laboratory management
+  - name: jurusan
+    description: Department management
+  - name: alat
+    description: Equipment management
+  - name: bahan
+    description: Material/supply management
+  - name: peminjaman-alat
+    description: Equipment borrowing transactions
+  - name: peminjaman-ruangan
+    description: Room borrowing transactions
+  - name: permintaan-bahan
+    description: Material request transactions
+  - name: berita
+    description: News/posts management
+  - name: galeri
+    description: Gallery management
+  - name: dokumen
+    description: Document management
+  - name: laporan
+    description: Reports
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +48,1122 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout user
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users:
+    get:
+      operationId: getUsers
+      tags: [users]
+      summary: Get all users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, mahasiswa, plp, gudang, dosen]
+        - name: jurusanId
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUserById
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+    put:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /users/{id}/verify:
+    put:
+      operationId: verifyUser
+      tags: [users]
+      summary: Verify user registration (by PLP)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyUserRequest"
+      responses:
+        "200":
+          description: User verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /jurusan:
+    get:
+      operationId: getJurusan
+      tags: [jurusan]
+      summary: Get all departments
+      responses:
+        "200":
+          description: List of departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Jurusan"
+
+    post:
+      operationId: createJurusan
+      tags: [jurusan]
+      summary: Create new department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJurusanRequest"
+      responses:
+        "201":
+          description: Department created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jurusan"
+
+  /jurusan/{id}:
+    put:
+      operationId: updateJurusan
+      tags: [jurusan]
+      summary: Update department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJurusanRequest"
+      responses:
+        "200":
+          description: Department updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jurusan"
+
+    delete:
+      operationId: deleteJurusan
+      tags: [jurusan]
+      summary: Delete department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Department deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /laboratorium:
+    get:
+      operationId: getLaboratorium
+      tags: [laboratorium]
+      summary: Get all laboratories
+      parameters:
+        - name: jurusanId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of laboratories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Laboratorium"
+
+    post:
+      operationId: createLaboratorium
+      tags: [laboratorium]
+      summary: Create new laboratory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLaboratoriumRequest"
+      responses:
+        "201":
+          description: Laboratory created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Laboratorium"
+
+  /laboratorium/{id}:
+    get:
+      operationId: getLaboratoriumById
+      tags: [laboratorium]
+      summary: Get laboratory by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Laboratory data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Laboratorium"
+
+    put:
+      operationId: updateLaboratorium
+      tags: [laboratorium]
+      summary: Update laboratory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLaboratoriumRequest"
+      responses:
+        "200":
+          description: Laboratory updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Laboratorium"
+
+    delete:
+      operationId: deleteLaboratorium
+      tags: [laboratorium]
+      summary: Delete laboratory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Laboratory deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /alat:
+    get:
+      operationId: getAlat
+      tags: [alat]
+      summary: Get all equipment
+      parameters:
+        - name: laboratoriumId
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of equipment
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alat"
+
+    post:
+      operationId: createAlat
+      tags: [alat]
+      summary: Create new equipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlatRequest"
+      responses:
+        "201":
+          description: Equipment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alat"
+
+  /alat/{id}:
+    get:
+      operationId: getAlatById
+      tags: [alat]
+      summary: Get equipment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Equipment data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alat"
+
+    put:
+      operationId: updateAlat
+      tags: [alat]
+      summary: Update equipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlatRequest"
+      responses:
+        "200":
+          description: Equipment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alat"
+
+    delete:
+      operationId: deleteAlat
+      tags: [alat]
+      summary: Delete equipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Equipment deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /bahan:
+    get:
+      operationId: getBahan
+      tags: [bahan]
+      summary: Get all materials/supplies
+      parameters:
+        - name: laboratoriumId
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of materials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bahan"
+
+    post:
+      operationId: createBahan
+      tags: [bahan]
+      summary: Create new material
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBahanRequest"
+      responses:
+        "201":
+          description: Material created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bahan"
+
+  /bahan/{id}:
+    put:
+      operationId: updateBahan
+      tags: [bahan]
+      summary: Update material
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBahanRequest"
+      responses:
+        "200":
+          description: Material updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bahan"
+
+    delete:
+      operationId: deleteBahan
+      tags: [bahan]
+      summary: Delete material
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Material deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /peminjaman-alat:
+    get:
+      operationId: getPeminjamanAlat
+      tags: [peminjaman-alat]
+      summary: Get equipment borrowing records
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [menunggu, disetujui, ditolak, dipinjam, dikembalikan]
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: laboratoriumId
+          in: query
+          schema:
+            type: integer
+        - name: tanggalMulai
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: tanggalSelesai
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: List of equipment borrowings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PeminjamanAlat"
+
+    post:
+      operationId: createPeminjamanAlat
+      tags: [peminjaman-alat]
+      summary: Create equipment borrowing request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePeminjamanAlatRequest"
+      responses:
+        "201":
+          description: Borrowing request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeminjamanAlat"
+
+  /peminjaman-alat/{id}:
+    get:
+      operationId: getPeminjamanAlatById
+      tags: [peminjaman-alat]
+      summary: Get equipment borrowing by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Borrowing data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeminjamanAlat"
+
+  /peminjaman-alat/{id}/status:
+    put:
+      operationId: updatePeminjamanAlatStatus
+      tags: [peminjaman-alat]
+      summary: Update borrowing status (approve/reject/return)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusRequest"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeminjamanAlat"
+
+  /peminjaman-ruangan:
+    get:
+      operationId: getPeminjamanRuangan
+      tags: [peminjaman-ruangan]
+      summary: Get room borrowing records
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [menunggu, disetujui, ditolak, selesai]
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: laboratoriumId
+          in: query
+          schema:
+            type: integer
+        - name: tanggalMulai
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: tanggalSelesai
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: List of room bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PeminjamanRuangan"
+
+    post:
+      operationId: createPeminjamanRuangan
+      tags: [peminjaman-ruangan]
+      summary: Create room booking request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePeminjamanRuanganRequest"
+      responses:
+        "201":
+          description: Room booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeminjamanRuangan"
+
+  /peminjaman-ruangan/{id}:
+    get:
+      operationId: getPeminjamanRuanganById
+      tags: [peminjaman-ruangan]
+      summary: Get room booking by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Room booking data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeminjamanRuangan"
+
+  /peminjaman-ruangan/{id}/status:
+    put:
+      operationId: updatePeminjamanRuanganStatus
+      tags: [peminjaman-ruangan]
+      summary: Update room booking status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusRequest"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeminjamanRuangan"
+
+  /permintaan-bahan:
+    get:
+      operationId: getPermintaanBahan
+      tags: [permintaan-bahan]
+      summary: Get material request records
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [menunggu, disetujui, ditolak, disiapkan]
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: tanggalMulai
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: tanggalSelesai
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: List of material requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PermintaanBahan"
+
+    post:
+      operationId: createPermintaanBahan
+      tags: [permintaan-bahan]
+      summary: Create material request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePermintaanBahanRequest"
+      responses:
+        "201":
+          description: Material request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermintaanBahan"
+
+  /permintaan-bahan/{id}:
+    get:
+      operationId: getPermintaanBahanById
+      tags: [permintaan-bahan]
+      summary: Get material request by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Material request data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermintaanBahan"
+
+  /permintaan-bahan/{id}/status:
+    put:
+      operationId: updatePermintaanBahanStatus
+      tags: [permintaan-bahan]
+      summary: Update material request status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusRequest"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermintaanBahan"
+
+  /berita:
+    get:
+      operationId: getBerita
+      tags: [berita]
+      summary: Get all news/posts
+      parameters:
+        - name: kategori
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of news
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Berita"
+
+    post:
+      operationId: createBerita
+      tags: [berita]
+      summary: Create news/post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBeritaRequest"
+      responses:
+        "201":
+          description: News created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Berita"
+
+  /berita/{id}:
+    get:
+      operationId: getBeritaById
+      tags: [berita]
+      summary: Get news by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: News data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Berita"
+
+    put:
+      operationId: updateBerita
+      tags: [berita]
+      summary: Update news
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBeritaRequest"
+      responses:
+        "200":
+          description: News updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Berita"
+
+    delete:
+      operationId: deleteBerita
+      tags: [berita]
+      summary: Delete news
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: News deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /galeri:
+    get:
+      operationId: getGaleri
+      tags: [galeri]
+      summary: Get all gallery items
+      parameters:
+        - name: tipe
+          in: query
+          schema:
+            type: string
+            enum: [foto, video]
+      responses:
+        "200":
+          description: List of gallery items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Galeri"
+
+    post:
+      operationId: createGaleri
+      tags: [galeri]
+      summary: Create gallery item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGaleriRequest"
+      responses:
+        "201":
+          description: Gallery item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Galeri"
+
+  /galeri/{id}:
+    delete:
+      operationId: deleteGaleri
+      tags: [galeri]
+      summary: Delete gallery item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Gallery item deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /dokumen:
+    get:
+      operationId: getDokumen
+      tags: [dokumen]
+      summary: Get all lab documents
+      parameters:
+        - name: laboratoriumId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Dokumen"
+
+    post:
+      operationId: createDokumen
+      tags: [dokumen]
+      summary: Upload lab document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDokumenRequest"
+      responses:
+        "201":
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dokumen"
+
+  /dokumen/{id}:
+    delete:
+      operationId: deleteDokumen
+      tags: [dokumen]
+      summary: Delete document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Document deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /laporan/statistik:
+    get:
+      operationId: getStatistik
+      tags: [laporan]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Statistics data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statistik"
+
+  /laporan/peminjaman:
+    get:
+      operationId: getLaporanPeminjaman
+      tags: [laporan]
+      summary: Get borrowing report
+      parameters:
+        - name: periode
+          in: query
+          schema:
+            type: string
+            enum: [harian, bulanan, tahunan]
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: bulan
+          in: query
+          schema:
+            type: integer
+        - name: tahun
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaporanPeminjaman"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +1171,779 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        error:
+          type: string
+      required: [message]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        message:
+          type: string
+      required: [user, message]
+
+    VerifyUserRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [aktif, ditolak]
+        catatan:
+          type: string
+      required: [status]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, mahasiswa, plp, gudang, dosen]
+        nim:
+          type: string
+          nullable: true
+        nip:
+          type: string
+          nullable: true
+        noHp:
+          type: string
+          nullable: true
+        jurusanId:
+          type: integer
+          nullable: true
+        jurusan:
+          $ref: "#/components/schemas/Jurusan"
+          nullable: true
+        laboratoriumId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [menunggu, aktif, nonaktif, ditolak]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, nama, email, role, status, createdAt]
+
+    CreateUserRequest:
+      type: object
+      properties:
+        nama:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [admin, mahasiswa, plp, gudang, dosen]
+        nim:
+          type: string
+          nullable: true
+        nip:
+          type: string
+          nullable: true
+        noHp:
+          type: string
+          nullable: true
+        jurusanId:
+          type: integer
+          nullable: true
+        laboratoriumId:
+          type: integer
+          nullable: true
+      required: [nama, email, password, role]
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        nama:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, mahasiswa, plp, gudang, dosen]
+        nim:
+          type: string
+          nullable: true
+        nip:
+          type: string
+          nullable: true
+        noHp:
+          type: string
+          nullable: true
+        jurusanId:
+          type: integer
+          nullable: true
+        laboratoriumId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [menunggu, aktif, nonaktif, ditolak]
+
+    Jurusan:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kode:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, nama, kode, createdAt]
+
+    CreateJurusanRequest:
+      type: object
+      properties:
+        nama:
+          type: string
+        kode:
+          type: string
+      required: [nama, kode]
+
+    Laboratorium:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kode:
+          type: string
+        lokasi:
+          type: string
+        kapasitas:
+          type: integer
+        jurusanId:
+          type: integer
+          nullable: true
+        jurusan:
+          $ref: "#/components/schemas/Jurusan"
+          nullable: true
+        deskripsi:
+          type: string
+          nullable: true
+        fasilitas:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, nama, kode, lokasi, kapasitas, createdAt]
+
+    CreateLaboratoriumRequest:
+      type: object
+      properties:
+        nama:
+          type: string
+        kode:
+          type: string
+        lokasi:
+          type: string
+        kapasitas:
+          type: integer
+        jurusanId:
+          type: integer
+          nullable: true
+        deskripsi:
+          type: string
+          nullable: true
+        fasilitas:
+          type: string
+          nullable: true
+      required: [nama, kode, lokasi, kapasitas]
+
+    Alat:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kode:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        kondisi:
+          type: string
+          enum: [baik, rusak_ringan, rusak_berat]
+        stok:
+          type: integer
+        stokTersedia:
+          type: integer
+        satuan:
+          type: string
+        laboratoriumId:
+          type: integer
+        laboratorium:
+          $ref: "#/components/schemas/Laboratorium"
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, nama, kode, kondisi, stok, stokTersedia, satuan, laboratoriumId, createdAt]
+
+    CreateAlatRequest:
+      type: object
+      properties:
+        nama:
+          type: string
+        kode:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        kondisi:
+          type: string
+          enum: [baik, rusak_ringan, rusak_berat]
+        stok:
+          type: integer
+        satuan:
+          type: string
+        laboratoriumId:
+          type: integer
+      required: [nama, kode, kondisi, stok, satuan, laboratoriumId]
+
+    Bahan:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kode:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        stok:
+          type: integer
+        stokMinimal:
+          type: integer
+        satuan:
+          type: string
+        laboratoriumId:
+          type: integer
+        laboratorium:
+          $ref: "#/components/schemas/Laboratorium"
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, nama, kode, stok, stokMinimal, satuan, laboratoriumId, createdAt]
+
+    CreateBahanRequest:
+      type: object
+      properties:
+        nama:
+          type: string
+        kode:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        stok:
+          type: integer
+        stokMinimal:
+          type: integer
+        satuan:
+          type: string
+        laboratoriumId:
+          type: integer
+      required: [nama, kode, stok, stokMinimal, satuan, laboratoriumId]
+
+    PeminjamanAlatItem:
+      type: object
+      properties:
+        alatId:
+          type: integer
+        alat:
+          $ref: "#/components/schemas/Alat"
+          nullable: true
+        jumlah:
+          type: integer
+      required: [alatId, jumlah]
+
+    PeminjamanAlat:
+      type: object
+      properties:
+        id:
+          type: integer
+        noPeminjaman:
+          type: string
+        userId:
+          type: integer
+        user:
+          $ref: "#/components/schemas/User"
+          nullable: true
+        laboratoriumId:
+          type: integer
+        laboratorium:
+          $ref: "#/components/schemas/Laboratorium"
+          nullable: true
+        tanggalPinjam:
+          type: string
+          format: date
+        tanggalKembali:
+          type: string
+          format: date
+        tanggalDikembalikan:
+          type: string
+          format: date
+          nullable: true
+        keperluan:
+          type: string
+        status:
+          type: string
+          enum: [menunggu, disetujui, ditolak, dipinjam, dikembalikan]
+        catatanPlp:
+          type: string
+          nullable: true
+        verifikasiOleh:
+          type: integer
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PeminjamanAlatItem"
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, noPeminjaman, userId, laboratoriumId, tanggalPinjam, tanggalKembali, keperluan, status, items, createdAt]
+
+    CreatePeminjamanAlatRequest:
+      type: object
+      properties:
+        laboratoriumId:
+          type: integer
+        tanggalPinjam:
+          type: string
+          format: date
+        tanggalKembali:
+          type: string
+          format: date
+        keperluan:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              alatId:
+                type: integer
+              jumlah:
+                type: integer
+            required: [alatId, jumlah]
+      required: [laboratoriumId, tanggalPinjam, tanggalKembali, keperluan, items]
+
+    PeminjamanRuangan:
+      type: object
+      properties:
+        id:
+          type: integer
+        noPeminjaman:
+          type: string
+        userId:
+          type: integer
+        user:
+          $ref: "#/components/schemas/User"
+          nullable: true
+        laboratoriumId:
+          type: integer
+        laboratorium:
+          $ref: "#/components/schemas/Laboratorium"
+          nullable: true
+        tanggalMulai:
+          type: string
+          format: date
+        tanggalSelesai:
+          type: string
+          format: date
+        waktuMulai:
+          type: string
+        waktuSelesai:
+          type: string
+        keperluan:
+          type: string
+        jumlahPeserta:
+          type: integer
+        status:
+          type: string
+          enum: [menunggu, disetujui, ditolak, selesai]
+        catatanPlp:
+          type: string
+          nullable: true
+        verifikasiOleh:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, noPeminjaman, userId, laboratoriumId, tanggalMulai, tanggalSelesai, waktuMulai, waktuSelesai, keperluan, jumlahPeserta, status, createdAt]
+
+    CreatePeminjamanRuanganRequest:
+      type: object
+      properties:
+        laboratoriumId:
+          type: integer
+        tanggalMulai:
+          type: string
+          format: date
+        tanggalSelesai:
+          type: string
+          format: date
+        waktuMulai:
+          type: string
+        waktuSelesai:
+          type: string
+        keperluan:
+          type: string
+        jumlahPeserta:
+          type: integer
+      required: [laboratoriumId, tanggalMulai, tanggalSelesai, waktuMulai, waktuSelesai, keperluan, jumlahPeserta]
+
+    PermintaanBahanItem:
+      type: object
+      properties:
+        bahanId:
+          type: integer
+        bahan:
+          $ref: "#/components/schemas/Bahan"
+          nullable: true
+        jumlahDiminta:
+          type: integer
+        jumlahDisetujui:
+          type: integer
+          nullable: true
+      required: [bahanId, jumlahDiminta]
+
+    PermintaanBahan:
+      type: object
+      properties:
+        id:
+          type: integer
+        noPermintaan:
+          type: string
+        userId:
+          type: integer
+        user:
+          $ref: "#/components/schemas/User"
+          nullable: true
+        laboratoriumId:
+          type: integer
+          nullable: true
+        tanggalDibutuhkan:
+          type: string
+          format: date
+        keperluan:
+          type: string
+        status:
+          type: string
+          enum: [menunggu, disetujui, ditolak, disiapkan]
+        catatanGudang:
+          type: string
+          nullable: true
+        verifikasiOleh:
+          type: integer
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermintaanBahanItem"
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, noPermintaan, userId, tanggalDibutuhkan, keperluan, status, items, createdAt]
+
+    CreatePermintaanBahanRequest:
+      type: object
+      properties:
+        laboratoriumId:
+          type: integer
+          nullable: true
+        tanggalDibutuhkan:
+          type: string
+          format: date
+        keperluan:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              bahanId:
+                type: integer
+              jumlahDiminta:
+                type: integer
+            required: [bahanId, jumlahDiminta]
+      required: [tanggalDibutuhkan, keperluan, items]
+
+    UpdateStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        catatan:
+          type: string
+          nullable: true
+        jumlahDisetujui:
+          type: array
+          items:
+            type: object
+            properties:
+              itemId:
+                type: integer
+              jumlah:
+                type: integer
+          nullable: true
+      required: [status]
+
+    Berita:
+      type: object
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        konten:
+          type: string
+        kategori:
+          type: string
+          nullable: true
+        thumbnail:
+          type: string
+          nullable: true
+        penulis:
+          $ref: "#/components/schemas/User"
+          nullable: true
+        penulisId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, judul, konten, penulisId, createdAt]
+
+    CreateBeritaRequest:
+      type: object
+      properties:
+        judul:
+          type: string
+        konten:
+          type: string
+        kategori:
+          type: string
+          nullable: true
+        thumbnail:
+          type: string
+          nullable: true
+      required: [judul, konten]
+
+    Galeri:
+      type: object
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        tipe:
+          type: string
+          enum: [foto, video]
+        url:
+          type: string
+        uploaderId:
+          type: integer
+        uploader:
+          $ref: "#/components/schemas/User"
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, judul, tipe, url, uploaderId, createdAt]
+
+    CreateGaleriRequest:
+      type: object
+      properties:
+        judul:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        tipe:
+          type: string
+          enum: [foto, video]
+        url:
+          type: string
+      required: [judul, tipe, url]
+
+    Dokumen:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        url:
+          type: string
+        tipe:
+          type: string
+          nullable: true
+        laboratoriumId:
+          type: integer
+          nullable: true
+        laboratorium:
+          $ref: "#/components/schemas/Laboratorium"
+          nullable: true
+        uploaderId:
+          type: integer
+        uploader:
+          $ref: "#/components/schemas/User"
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, nama, url, uploaderId, createdAt]
+
+    CreateDokumenRequest:
+      type: object
+      properties:
+        nama:
+          type: string
+        deskripsi:
+          type: string
+          nullable: true
+        url:
+          type: string
+        tipe:
+          type: string
+          nullable: true
+        laboratoriumId:
+          type: integer
+          nullable: true
+      required: [nama, url]
+
+    Statistik:
+      type: object
+      properties:
+        totalLaboratorium:
+          type: integer
+        totalAlat:
+          type: integer
+        totalBahan:
+          type: integer
+        totalUser:
+          type: integer
+        peminjamanAlatBulanIni:
+          type: integer
+        peminjamanRuanganBulanIni:
+          type: integer
+        permintaanBahanBulanIni:
+          type: integer
+        peminjamanAlatMenunggu:
+          type: integer
+        peminjamanRuanganMenunggu:
+          type: integer
+        permintaanBahanMenunggu:
+          type: integer
+      required:
+        - totalLaboratorium
+        - totalAlat
+        - totalBahan
+        - totalUser
+        - peminjamanAlatBulanIni
+        - peminjamanRuanganBulanIni
+        - permintaanBahanBulanIni
+        - peminjamanAlatMenunggu
+        - peminjamanRuanganMenunggu
+        - permintaanBahanMenunggu
+
+    LaporanPeminjaman:
+      type: object
+      properties:
+        periode:
+          type: string
+        totalPeminjamanAlat:
+          type: integer
+        totalPeminjamanRuangan:
+          type: integer
+        totalPermintaanBahan:
+          type: integer
+        dataAlat:
+          type: array
+          items:
+            type: object
+            properties:
+              tanggal:
+                type: string
+              total:
+                type: integer
+        dataRuangan:
+          type: array
+          items:
+            type: object
+            properties:
+              tanggal:
+                type: string
+              total:
+                type: integer
+        dataBahan:
+          type: array
+          items:
+            type: object
+            properties:
+              tanggal:
+                type: string
+              total:
+                type: integer
+      required:
+        - periode
+        - totalPeminjamanAlat
+        - totalPeminjamanRuangan
+        - totalPermintaanBahan
+        - dataAlat
+        - dataRuangan
+        - dataBahan

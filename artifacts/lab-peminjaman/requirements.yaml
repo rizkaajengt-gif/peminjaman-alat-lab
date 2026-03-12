@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "For smooth page transitions and sidebar animations"
+  "recharts": "For dashboard and reports data visualization"
+  "date-fns": "For formatting dates in Indonesian locale"
+  "react-hook-form": "For complex form state management"
+  "@hookform/resolvers": "For Zod validation integration with forms"
+  "zod": "For form schema validation"
+
+images:
+  - path: "artifacts/lab-peminjaman/public/images/hero-bg.png"
+    description: "A clean, bright, modern medical laboratory or health polytechnic building interior, soft depth of field, professional institutional lighting, subtle teal and white tones"
+    aspect_ratio: "16:9"
+  - path: "artifacts/lab-peminjaman/public/images/logo.png"
+    description: "A modern, minimalist emblem logo for a health polytechnic laboratory, incorporating a subtle medical cross and a flask or shield, solid teal color on transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated API hooks from @workspace/api-client-react
+  - Shadcn UI components are assumed to be present in src/components/ui
+  - Authentication relies on HTTP-only cookies, using /api/auth/me for session state
