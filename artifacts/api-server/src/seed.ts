@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password + "poltekkes_salt").digest("hex");
@@ -8,7 +8,26 @@ function hashPassword(password: string): string {
 
 export async function seedDefaultAdmin() {
   try {
-    const existing = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, "admin@poltekkes-tasikmalaya.ac.id")).limit(1);
+    // Ensure session table exists
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL,
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL,
+        CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
+      ) WITH (OIDS=FALSE)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")
+    `);
+
+    // Ensure default admin exists
+    const existing = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, "admin@poltekkes-tasikmalaya.ac.id"))
+      .limit(1);
+
     if (existing.length === 0) {
       await db.insert(usersTable).values({
         nama: "Administrator",
