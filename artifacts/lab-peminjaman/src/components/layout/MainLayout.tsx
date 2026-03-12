@@ -29,6 +29,8 @@ import {
   BellRing,
   UserCircle,
   Package,
+  X,
+  Home,
 } from "lucide-react";
 import { useGetStatistik } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 
 interface NavItem {
@@ -150,10 +153,113 @@ function NotifikasiBell({ role, stats }: { role: string; stats: any }) {
   );
 }
 
+function SidebarContent({
+  filteredNav,
+  groups,
+  ungrouped,
+  location,
+  user,
+  isSidebarOpen,
+  onNavClick,
+}: {
+  filteredNav: NavItem[];
+  groups: string[];
+  ungrouped: NavItem[];
+  location: string;
+  user: any;
+  isSidebarOpen: boolean;
+  onNavClick?: () => void;
+}) {
+  const { toast } = useToast();
+  const logoutMutation = useLogout({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Berhasil logout", description: "Sampai jumpa kembali!" });
+        window.location.href = "/";
+      },
+    },
+  });
+
+  const NavLink = ({ item }: { item: NavItem }) => {
+    const isActive = location === item.href || location.startsWith(item.href + "/");
+    return (
+      <Link
+        href={item.href}
+        onClick={onNavClick}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+          isActive
+            ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+            : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
+        }`}
+      >
+        <item.icon
+          size={18}
+          className={isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"}
+          strokeWidth={isActive ? 2.5 : 2}
+        />
+        <span className="font-medium text-sm truncate">{item.title}</span>
+        {isActive && <ChevronRight size={14} className="ml-auto text-primary-foreground/70" />}
+      </Link>
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      {/* Logo */}
+      <div className="h-16 flex items-center px-4 border-b border-slate-100 shrink-0">
+        <img src={`${import.meta.env.BASE_URL}logo-poltekkes.png`} alt="Poltekkes Tasikmalaya" className="h-9 object-contain" />
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-2 flex flex-col gap-0.5">
+        {ungrouped.map((item) => <NavLink key={item.href} item={item} />)}
+        {groups.map((group) => {
+          const items = filteredNav.filter((n) => n.group === group);
+          if (!items.length) return null;
+          return (
+            <div key={group} className="mt-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 mb-1.5">{GROUP_LABELS[group] || group}</p>
+              {items.map((item) => <NavLink key={item.href} item={item} />)}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* User Footer */}
+      <div className="p-3 border-t border-slate-100 shrink-0 space-y-2">
+        <div className="flex items-center gap-2 px-2 py-2 bg-slate-50 rounded-xl">
+          <Avatar className="w-8 h-8 shrink-0">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+              {user.nama.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-foreground truncate">{user.nama}</p>
+            <p className="text-[10px] text-muted-foreground capitalize">{user.role}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+            onClick={() => logoutMutation.mutate()}
+            title="Keluar"
+          >
+            <LogOut size={14} />
+          </Button>
+        </div>
+        <p className="text-[9px] text-center text-slate-300 leading-tight pb-0.5">
+          Design by <span className="text-teal-400 font-medium">Rizka Ajeng Trikusumah</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { toast } = useToast();
   const { data: stats } = useGetStatistik();
 
@@ -169,37 +275,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   const filteredNav = NAV_ITEMS.filter((item) => item.roles.includes(user.role));
-
-  const groups = ["", ...Array.from(new Set(filteredNav.map((n) => n.group || "")))].filter(
-    (v, i, a) => a.indexOf(v) === i && v !== ""
-  );
+  const groups = Array.from(new Set(filteredNav.map((n) => n.group || "").filter(Boolean)));
   const ungrouped = filteredNav.filter((n) => !n.group);
-
-  const NavLink = ({ item }: { item: NavItem }) => {
-    const isActive = location === item.href || location.startsWith(item.href + "/");
-    return (
-      <Link
-        href={item.href}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
-          isActive
-            ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-            : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
-        }`}
-      >
-        <item.icon
-          size={18}
-          className={isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"}
-          strokeWidth={isActive ? 2.5 : 2}
-        />
-        {isSidebarOpen && <span className="font-medium text-sm truncate">{item.title}</span>}
-        {isActive && isSidebarOpen && <ChevronRight size={14} className="ml-auto text-primary-foreground/70" />}
-      </Link>
-    );
-  };
+  const currentTitle = [...filteredNav].reverse().find((n) => location.startsWith(n.href))?.title || "Dashboard";
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <motion.aside
         initial={{ width: 256 }}
         animate={{ width: isSidebarOpen ? 256 : 64 }}
@@ -219,8 +301,28 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 flex flex-col gap-0.5">
-          {ungrouped.map((item) => <NavLink key={item.href} item={item} />)}
-
+          {ungrouped.map((item) => {
+            const isActive = location === item.href || location.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                    : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
+                }`}
+              >
+                <item.icon
+                  size={18}
+                  className={isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+                {isSidebarOpen && <span className="font-medium text-sm truncate">{item.title}</span>}
+                {isActive && isSidebarOpen && <ChevronRight size={14} className="ml-auto text-primary-foreground/70" />}
+              </Link>
+            );
+          })}
           {groups.map((group) => {
             const items = filteredNav.filter((n) => n.group === group);
             if (!items.length) return null;
@@ -229,13 +331,34 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 {isSidebarOpen && (
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 mb-1.5">{GROUP_LABELS[group] || group}</p>
                 )}
-                {items.map((item) => <NavLink key={item.href} item={item} />)}
+                {items.map((item) => {
+                  const isActive = location === item.href || location.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                          : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon
+                        size={18}
+                        className={isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"}
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
+                      {isSidebarOpen && <span className="font-medium text-sm truncate">{item.title}</span>}
+                      {isActive && isSidebarOpen && <ChevronRight size={14} className="ml-auto text-primary-foreground/70" />}
+                    </Link>
+                  );
+                })}
               </div>
             );
           })}
         </nav>
 
-        {/* User Footer */}
+        {/* Desktop User Footer */}
         <div className="p-3 border-t border-slate-100 shrink-0 space-y-2">
           <div className={`flex items-center gap-2 px-2 py-2 bg-slate-50 rounded-xl ${isSidebarOpen ? "" : "justify-center"}`}>
             <Avatar className="w-8 h-8 shrink-0">
@@ -261,8 +384,34 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 bg-white border-b border-slate-200 z-10 px-4 md:px-6 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
+        <header className="h-16 bg-white border-b border-slate-200 z-10 px-3 md:px-6 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            {/* Mobile hamburger — opens drawer */}
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex md:hidden text-muted-foreground hover:text-foreground"
+                >
+                  <Menu size={20} />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-72">
+                <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
+                <SidebarContent
+                  filteredNav={filteredNav}
+                  groups={groups}
+                  ungrouped={ungrouped}
+                  location={location}
+                  user={user}
+                  isSidebarOpen={true}
+                  onNavClick={() => setMobileOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+
+            {/* Desktop sidebar toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -271,26 +420,28 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             >
               <Menu size={20} />
             </Button>
-            <h2 className="font-bold text-base md:text-lg text-foreground hidden sm:block">
-              {[...filteredNav].reverse().find((n) => location.startsWith(n.href))?.title || "Dashboard"}
+
+            {/* Page title */}
+            <h2 className="font-bold text-sm md:text-lg text-foreground">
+              {currentTitle}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <NotifikasiBell role={user.role} stats={stats} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="gap-2 pl-2 pr-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full h-10"
+                  className="gap-1.5 pl-1.5 pr-2 md:pr-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full h-9 md:h-10"
                 >
-                  <Avatar className="w-7 h-7">
+                  <Avatar className="w-6 h-6 md:w-7 md:h-7">
                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                       {user.nama.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium hidden sm:block">{user.nama.split(" ")[0]}</span>
-                  <ChevronDown size={14} className="text-muted-foreground" />
+                  <span className="text-xs md:text-sm font-medium hidden sm:block">{user.nama.split(" ")[0]}</span>
+                  <ChevronDown size={12} className="text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl">
@@ -307,6 +458,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                     <span>Profil & Keamanan</span>
                   </DropdownMenuItem>
                 </Link>
+                <Link href="/dashboard">
+                  <DropdownMenuItem className="cursor-pointer mx-2 rounded-lg gap-2">
+                    <Home className="h-4 w-4 text-slate-500" />
+                    <span>Ke Dashboard</span>
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => logoutMutation.mutate()}
@@ -321,7 +478,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50/80 p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-slate-50/80 p-3 md:p-6 lg:p-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location}
