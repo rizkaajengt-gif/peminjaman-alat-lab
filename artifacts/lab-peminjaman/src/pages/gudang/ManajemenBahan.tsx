@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertTriangle, CheckCircle2, XCircle, Package, Edit3 } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2, XCircle, Package, Edit3, Pencil, Printer } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -140,13 +140,26 @@ function VerifikasiTab() {
   const qc = useQueryClient();
   const [selectedPb, setSelectedPb] = useState<any>(null);
   const [catatan, setCatatan] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [editedItems, setEditedItems] = useState<Record<number, number>>({});
   const { data: permintaan, isLoading } = useGetPermintaanBahan({ status: "menunggu" as any });
   const updateStatus = useUpdatePermintaanBahanStatus();
 
+  const openPrint = (id: number) => {
+    window.open(`${import.meta.env.BASE_URL}print/permintaan-bahan/${id}`, "_blank");
+  };
+
   const handleAction = (status: string) => {
     if (!selectedPb) return;
-    updateStatus.mutate({ id: selectedPb.id, data: { status, catatan: catatan || undefined } }, {
-      onSuccess: () => { toast({ title: status === "disetujui" ? "Permintaan disetujui" : "Permintaan ditolak" }); setSelectedPb(null); setCatatan(""); qc.invalidateQueries({ queryKey: ["/api/permintaan-bahan"] }); },
+    const jumlahDisetujui = status === "disetujui"
+      ? selectedPb.items?.map((item: any) => ({ itemId: item.id, jumlah: editedItems[item.id] ?? item.jumlahDiminta }))
+      : undefined;
+    updateStatus.mutate({ id: selectedPb.id, data: { status, catatan: catatan || undefined, jumlahDisetujui } as any }, {
+      onSuccess: () => {
+        toast({ title: status === "disetujui" ? "Permintaan disetujui" : "Permintaan ditolak" });
+        setSelectedPb(null); setCatatan(""); setEditMode(false); setEditedItems({});
+        qc.invalidateQueries({ queryKey: ["/api/permintaan-bahan"] });
+      },
       onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message }),
     });
   };
@@ -182,8 +195,9 @@ function VerifikasiTab() {
                   {p.items?.map((i: any) => `${i.bahan?.nama} (${i.jumlahDiminta} ${i.bahan?.satuan})`).join(", ")}
                 </TableCell>
                 <TableCell className="text-sm">{formatDate(p.tanggalDibutuhkan)}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => setSelectedPb(p)}>Proses</Button>
+                <TableCell className="text-right space-x-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak" onClick={() => openPrint(p.id)}><Printer className="w-4 h-4" /></Button>
+                  <Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => { setSelectedPb(p); setCatatan(""); setEditMode(false); setEditedItems({}); }}>Proses</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -191,7 +205,7 @@ function VerifikasiTab() {
         </Table>
       </Card>
 
-      <Dialog open={!!selectedPb} onOpenChange={(o) => !o && setSelectedPb(null)}>
+      <Dialog open={!!selectedPb} onOpenChange={(o) => { if (!o) { setSelectedPb(null); setEditMode(false); setEditedItems({}); } }}>
         <DialogContent className="rounded-2xl max-w-lg">
           <DialogHeader><DialogTitle>Verifikasi Permintaan Bahan</DialogTitle></DialogHeader>
           {selectedPb && (
@@ -201,12 +215,29 @@ function VerifikasiTab() {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Pemohon</span><span className="font-medium">{selectedPb.user?.nama}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Keperluan</span><span className="font-medium text-right max-w-xs">{selectedPb.keperluan}</span></div>
               </div>
-              <div className="space-y-2">
+              <div className="flex items-center justify-between">
                 <Label className="font-semibold">Daftar Bahan</Label>
-                {selectedPb.items?.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
-                    <span className="font-medium">{item.bahan?.nama}</span>
-                    <span className="text-muted-foreground">{item.jumlahDiminta} {item.bahan?.satuan}</span>
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1" onClick={() => { setEditMode(!editMode); setEditedItems({}); }}>
+                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan Edit" : "Edit Jumlah"}
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {selectedPb.items?.map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
+                    <div>
+                      <div className="font-medium">{item.bahan?.nama}</div>
+                      <div className="text-xs text-muted-foreground">Diminta: {item.jumlahDiminta} {item.bahan?.satuan}</div>
+                    </div>
+                    {editMode ? (
+                      <div className="flex items-center gap-2">
+                        <Input type="number" min={0} className="w-20 h-8 rounded-lg text-center text-sm"
+                          value={editedItems[item.id] ?? item.jumlahDiminta}
+                          onChange={e => setEditedItems(prev => ({ ...prev, [item.id]: Number(e.target.value) }))} />
+                        <span className="text-xs text-muted-foreground">{item.bahan?.satuan}</span>
+                      </div>
+                    ) : (
+                      <span className="font-semibold">{item.jumlahDiminta} {item.bahan?.satuan}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -216,8 +247,9 @@ function VerifikasiTab() {
               </div>
             </div>
           )}
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setSelectedPb(null)} className="rounded-xl">Batal</Button>
+            {selectedPb && <Button variant="outline" onClick={() => openPrint(selectedPb.id)} className="rounded-xl gap-2"><Printer className="w-4 h-4" />Cetak</Button>}
             <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatus.isPending} className="rounded-xl gap-2">
               <XCircle className="w-4 h-4" />Tolak
             </Button>

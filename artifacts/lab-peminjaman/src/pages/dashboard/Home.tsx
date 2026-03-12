@@ -162,6 +162,7 @@ function PlpDashboard() {
           <QuickActionCard title="Verifikasi Pengajuan" desc="Setujui atau tolak pengajuan" href="/plp/verifikasi" icon={BookOpenCheck} colorClass="bg-rose-50 text-rose-700" />
           <QuickActionCard title="Inventaris Lab" desc="Kelola alat & bahan" href="/plp/inventaris" icon={Database} colorClass="bg-teal-50 text-teal-700" />
           <QuickActionCard title="Permintaan Bahan" desc="Lihat permintaan bahan masuk" href="/plp/permintaan" icon={FlaskConical} colorClass="bg-amber-50 text-amber-700" />
+          <QuickActionCard title="Laporan Lab Saya" desc="Statistik & ekspor data lab" href="/plp/laporan" icon={BarChart3} colorClass="bg-sky-50 text-sky-700" />
         </div>
       </div>
     </div>

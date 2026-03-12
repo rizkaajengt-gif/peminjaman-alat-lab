@@ -22,7 +22,7 @@ export default function MahasiswaRiwayat() {
   const { data: permintaanBahan, isLoading: l3 } = useGetPermintaanBahan({});
 
   const openPrint = (type: string, id: number) => {
-    window.open(`/lab-peminjaman/print/${type}/${id}`, "_blank");
+    window.open(`${import.meta.env.BASE_URL}print/${type}/${id}`, "_blank");
   };
 
   return (

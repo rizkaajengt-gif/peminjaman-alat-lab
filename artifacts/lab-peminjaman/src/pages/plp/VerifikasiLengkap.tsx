@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetPeminjamanAlat, useUpdatePeminjamanAlatStatus, useGetPeminjamanRuangan, useUpdatePeminjamanRuanganStatus, useGetUsers, useVerifyUser, customFetch } from "@workspace/api-client-react";
+import { useGetPeminjamanAlat, useUpdatePeminjamanAlatStatus, useGetPeminjamanRuangan, useUpdatePeminjamanRuanganStatus, useGetUsers, useVerifyUser, useGetPermintaanBahan, useUpdatePermintaanBahanStatus, customFetch } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { StatusBadge } from "@/components/ui-custom/StatusBadge";
 import { Card } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, XCircle, ClipboardList, CalendarDays, Users, Pencil } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ClipboardList, CalendarDays, Users, Pencil, Printer, FlaskConical } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -20,6 +20,10 @@ import { id } from "date-fns/locale";
 function formatDate(d: string | undefined) {
   if (!d) return "-";
   try { return format(new Date(d), "dd MMM yyyy", { locale: id }); } catch { return d; }
+}
+
+function openPrint(type: string, id: number) {
+  window.open(`${import.meta.env.BASE_URL}print/${type}/${id}`, "_blank");
 }
 
 export default function PlpVerifikasi() {
@@ -52,12 +56,16 @@ export default function PlpVerifikasi() {
           <TabsTrigger value="ruangan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <CalendarDays className="w-4 h-4" />Peminjaman Ruangan
           </TabsTrigger>
+          <TabsTrigger value="bahan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <FlaskConical className="w-4 h-4" />Permintaan Bahan
+          </TabsTrigger>
           <TabsTrigger value="mahasiswa" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <Users className="w-4 h-4" />Pendaftaran Mahasiswa
           </TabsTrigger>
         </TabsList>
         <TabsContent value="alat"><VerifikasiAlatTab /></TabsContent>
         <TabsContent value="ruangan"><VerifikasiRuanganTab /></TabsContent>
+        <TabsContent value="bahan"><VerifikasiBahanTab /></TabsContent>
         <TabsContent value="mahasiswa"><VerifikasiMahasiswaTab /></TabsContent>
       </Tabs>
     </div>
@@ -192,8 +200,9 @@ function VerifikasiAlatTab() {
               </div>
             </div>
           )}
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">Batal</Button>
+            {selected && <Button variant="outline" onClick={() => openPrint("peminjaman-alat", selected.id)} className="rounded-xl gap-2"><Printer className="w-4 h-4" />Cetak</Button>}
             <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatus.isPending || editMode} className="rounded-xl gap-2"><XCircle className="w-4 h-4" />Tolak</Button>
             <Button onClick={() => handleAction("disetujui")} disabled={updateStatus.isPending || editMode} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
               {updateStatus.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Setujui</>}
@@ -329,5 +338,116 @@ function VerifikasiMahasiswaTab() {
         </TableBody>
       </Table>
     </Card>
+  );
+}
+
+function VerifikasiBahanTab() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [selected, setSelected] = useState<any>(null);
+  const [catatan, setCatatan] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [editedItems, setEditedItems] = useState<Record<number, number>>({});
+  const { data, isLoading } = useGetPermintaanBahan({ status: "menunggu" as any });
+  const updateStatus = useUpdatePermintaanBahanStatus();
+
+  const handleAction = (status: string) => {
+    if (!selected) return;
+    const jumlahDisetujui = status === "disetujui"
+      ? selected.items?.map((item: any) => ({ itemId: item.id, jumlah: editedItems[item.id] ?? item.jumlahDiminta }))
+      : undefined;
+    updateStatus.mutate({ id: selected.id, data: { status, catatan: catatan || undefined, jumlahDisetujui } as any }, {
+      onSuccess: () => {
+        toast({ title: status === "disetujui" ? "Permintaan disetujui" : "Permintaan ditolak" });
+        setSelected(null); setCatatan(""); setEditMode(false); setEditedItems({});
+        qc.invalidateQueries({ queryKey: ["/api/permintaan-bahan"] });
+      },
+      onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message }),
+    });
+  };
+
+  return (
+    <>
+      <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+        <Table>
+          <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+            <TableHead className="font-semibold">No. Permintaan</TableHead>
+            <TableHead className="font-semibold">Pemohon</TableHead>
+            <TableHead className="font-semibold">Keperluan</TableHead>
+            <TableHead className="font-semibold">Bahan Diminta</TableHead>
+            <TableHead className="font-semibold">Tgl Dibutuhkan</TableHead>
+            <TableHead className="text-right font-semibold">Aksi</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+            : data?.length === 0 ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada permintaan bahan yang menunggu verifikasi</TableCell></TableRow>
+            : data?.map((p: any) => (
+              <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableCell className="font-mono text-xs font-bold text-primary">{p.noPermintaan}</TableCell>
+                <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div></TableCell>
+                <TableCell className="text-sm max-w-xs truncate">{p.keperluan}</TableCell>
+                <TableCell className="text-xs text-muted-foreground max-w-xs">{p.items?.map((i: any) => `${i.bahan?.nama} (${i.jumlahDiminta} ${i.bahan?.satuan})`).join(", ")}</TableCell>
+                <TableCell className="text-sm">{formatDate(p.tanggalDibutuhkan)}</TableCell>
+                <TableCell className="text-right space-x-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak" onClick={() => openPrint("permintaan-bahan", p.id)}><Printer className="w-4 h-4" /></Button>
+                  <Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => { setSelected(p); setCatatan(""); setEditMode(false); setEditedItems({}); }}>Proses</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) { setSelected(null); setEditMode(false); setEditedItems({}); } }}>
+        <DialogContent className="rounded-2xl max-w-lg">
+          <DialogHeader><DialogTitle>Verifikasi Permintaan Bahan</DialogTitle></DialogHeader>
+          {selected && (
+            <div className="space-y-4 py-2">
+              <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">No. Permintaan</span><span className="font-mono font-bold">{selected.noPermintaan}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Pemohon</span><span className="font-medium">{selected.user?.nama}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Keperluan</span><span className="font-medium text-right max-w-xs">{selected.keperluan}</span></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Daftar Bahan:</span>
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1" onClick={() => { setEditMode(!editMode); setEditedItems({}); }}>
+                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan Edit" : "Edit Jumlah"}
+                </Button>
+              </div>
+              {selected.items?.map((item: any) => (
+                <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
+                  <div>
+                    <div className="font-medium">{item.bahan?.nama}</div>
+                    <div className="text-xs text-muted-foreground">Diminta: {item.jumlahDiminta} {item.bahan?.satuan}</div>
+                  </div>
+                  {editMode ? (
+                    <div className="flex items-center gap-2">
+                      <Input type="number" min={0} className="w-20 h-8 rounded-lg text-center text-sm"
+                        value={editedItems[item.id] ?? item.jumlahDiminta}
+                        onChange={e => setEditedItems(prev => ({ ...prev, [item.id]: Number(e.target.value) }))} />
+                      <span className="text-xs text-muted-foreground">{item.bahan?.satuan}</span>
+                    </div>
+                  ) : (
+                    <span className="font-semibold">{item.jumlahDiminta} {item.bahan?.satuan}</span>
+                  )}
+                </div>
+              ))}
+              <div className="space-y-1.5">
+                <Label>Catatan (Opsional)</Label>
+                <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan untuk pemohon..." className="rounded-xl resize-none" rows={2} />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">Batal</Button>
+            {selected && <Button variant="outline" onClick={() => openPrint("permintaan-bahan", selected.id)} className="rounded-xl gap-2"><Printer className="w-4 h-4" />Cetak</Button>}
+            <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatus.isPending} className="rounded-xl gap-2"><XCircle className="w-4 h-4" />Tolak</Button>
+            <Button onClick={() => handleAction("disetujui")} disabled={updateStatus.isPending} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
+              {updateStatus.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Setujui</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
