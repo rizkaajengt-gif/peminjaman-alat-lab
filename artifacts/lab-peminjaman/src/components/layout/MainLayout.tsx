@@ -14,7 +14,6 @@ import {
   Menu,
   LogOut,
   ChevronDown,
-  BellRing,
   FlaskConical,
   BookOpenCheck,
   Building2,
@@ -166,7 +165,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* User Footer */}
-        <div className="p-3 border-t border-slate-100 shrink-0">
+        <div className="p-3 border-t border-slate-100 shrink-0 space-y-2">
           <div className={`flex items-center gap-2 px-2 py-2 bg-slate-50 rounded-xl ${isSidebarOpen ? "" : "justify-center"}`}>
             <Avatar className="w-8 h-8 shrink-0">
               <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
@@ -180,6 +179,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             )}
           </div>
+          {isSidebarOpen && (
+            <p className="text-[9px] text-center text-slate-300 leading-tight pb-0.5">
+              Design by <span className="text-teal-400 font-medium">Rizka Ajeng Trikusumah</span>
+            </p>
+          )}
         </div>
       </motion.aside>
 
@@ -202,10 +206,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative text-muted-foreground">
-              <BellRing size={18} />
-            </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
