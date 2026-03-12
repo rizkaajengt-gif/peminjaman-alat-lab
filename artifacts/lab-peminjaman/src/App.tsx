@@ -25,6 +25,7 @@ import Riwayat from "./pages/mahasiswa/Riwayat";
 import JadwalRuangan from "./pages/mahasiswa/JadwalRuangan";
 
 import PlpVerifikasi from "./pages/plp/VerifikasiLengkap";
+import PlpLaporan from "./pages/plp/Laporan";
 import GudangManajemen from "./pages/gudang/ManajemenBahan";
 
 import PrintPermintaan from "./pages/shared/PrintPermintaan";
@@ -77,6 +78,7 @@ function Router() {
       <Route path="/plp/verifikasi">{() => <ProtectedRoute component={PlpVerifikasi} roles={["plp", "admin"]} />}</Route>
       <Route path="/plp/inventaris">{() => <ProtectedRoute component={AdminInventaris} roles={["plp"]} />}</Route>
       <Route path="/plp/permintaan">{() => <ProtectedRoute component={GudangManajemen} roles={["plp"]} />}</Route>
+      <Route path="/plp/laporan">{() => <ProtectedRoute component={PlpLaporan} roles={["plp"]} />}</Route>
 
       {/* Gudang */}
       <Route path="/gudang/manajemen">{() => <ProtectedRoute component={GudangManajemen} roles={["gudang", "admin"]} />}</Route>

@@ -1,7 +1,14 @@
 import { Router } from "express";
-import { db, laboratoriumTable, alatTable, bahanTable, usersTable, peminjamanAlatTable, peminjamanRuanganTable, permintaanBahanTable } from "@workspace/db";
-import { eq, and, gte, lte, count, between } from "drizzle-orm";
+import { db, laboratoriumTable, alatTable, bahanTable, usersTable, peminjamanAlatTable, peminjamanRuanganTable, permintaanBahanTable, plpLaboratoriumTable } from "@workspace/db";
+import { eq, and, gte, lte, count, inArray } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
+
+async function getPlpLabIds(userId: number): Promise<number[]> {
+  const assignments = await db.query.plpLaboratoriumTable.findMany({
+    where: eq(plpLaboratoriumTable.plpId, userId),
+  });
+  return assignments.map(a => a.laboratoriumId);
+}
 
 const router = Router();
 
@@ -97,14 +104,67 @@ router.get("/peminjaman", requireAuth, requireRole("admin"), async (req: AuthReq
  * Statistik per laboratorium: jam terpakai, jumlah transaksi per kategori
  * Query params: startDate (YYYY-MM-DD), endDate (YYYY-MM-DD), labId (number, optional)
  */
+router.get("/statistik-plp", requireAuth, requireRole("plp"), async (req: AuthRequest, res) => {
+  try {
+    const now = new Date();
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    const labIds = await getPlpLabIds(req.user!.id);
+    if (!labIds.length) { res.json({ labIds: [], peminjamanAlatBulanIni: 0, peminjamanRuanganBulanIni: 0, permintaanBahanBulanIni: 0, menungguVerifikasi: 0 }); return; }
+
+    const [paMonth] = await db.select({ count: count() }).from(peminjamanAlatTable)
+      .where(and(gte(peminjamanAlatTable.tanggalPinjam, firstOfMonth), inArray(peminjamanAlatTable.laboratoriumId, labIds)));
+    const [prMonth] = await db.select({ count: count() }).from(peminjamanRuanganTable)
+      .where(and(gte(peminjamanRuanganTable.tanggalMulai, firstOfMonth), inArray(peminjamanRuanganTable.laboratoriumId, labIds)));
+    const [pbMonth] = await db.select({ count: count() }).from(permintaanBahanTable)
+      .where(and(gte(permintaanBahanTable.tanggalDibutuhkan, firstOfMonth), inArray(permintaanBahanTable.laboratoriumId, labIds)));
+    const [paWaiting] = await db.select({ count: count() }).from(peminjamanAlatTable)
+      .where(and(eq(peminjamanAlatTable.status, "menunggu"), inArray(peminjamanAlatTable.laboratoriumId, labIds)));
+    const [prWaiting] = await db.select({ count: count() }).from(peminjamanRuanganTable)
+      .where(and(eq(peminjamanRuanganTable.status, "menunggu"), inArray(peminjamanRuanganTable.laboratoriumId, labIds)));
+
+    const labs = await db.query.laboratoriumTable.findMany({
+      where: inArray(laboratoriumTable.id, labIds),
+      with: { jurusan: true },
+    });
+
+    res.json({
+      labIds,
+      labs: labs.map(l => ({ id: l.id, nama: l.nama, jurusan: (l as any).jurusan?.nama || "-" })),
+      peminjamanAlatBulanIni: Number(paMonth.count),
+      peminjamanRuanganBulanIni: Number(prMonth.count),
+      permintaanBahanBulanIni: Number(pbMonth.count),
+      menungguVerifikasi: Number(paWaiting.count) + Number(prWaiting.count),
+    });
+  } catch (e: any) {
+    res.status(500).json({ message: "Server error: " + e.message });
+  }
+});
+
 router.get("/statistik-lab", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
   try {
     const { startDate, endDate, labId } = req.query;
     const start = (startDate as string) || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
     const end = (endDate as string) || new Date().toISOString().split("T")[0];
 
+    let allowedLabIds: number[] | null = null;
+    if (req.user!.role === "plp") {
+      allowedLabIds = await getPlpLabIds(req.user!.id);
+      if (!allowedLabIds.length) { res.json({ periode: { start, end }, labs: [], totalJamSeluruhLab: 0, totalTransaksiRuangan: 0, totalTransaksiAlat: 0 }); return; }
+    }
+
+    let labWhere: any = undefined;
+    if (labId && labId !== "_all_") {
+      const requestedId = Number(labId);
+      if (allowedLabIds && !allowedLabIds.includes(requestedId)) {
+        res.status(403).json({ message: "Lab ini bukan lab yang Anda tangani" }); return;
+      }
+      labWhere = eq(laboratoriumTable.id, requestedId);
+    } else if (allowedLabIds) {
+      labWhere = inArray(laboratoriumTable.id, allowedLabIds);
+    }
+
     const labs = await db.query.laboratoriumTable.findMany({
-      where: labId ? eq(laboratoriumTable.id, Number(labId)) : undefined,
+      where: labWhere,
       with: { jurusan: true },
     });
 
@@ -184,12 +244,18 @@ router.get("/statistik-lab/export", requireAuth, requireRole("admin", "plp"), as
     const start = (startDate as string) || new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
     const end = (endDate as string) || new Date().toISOString().split("T")[0];
 
+    let allowedLabIds: number[] | null = null;
+    if (req.user!.role === "plp") {
+      allowedLabIds = await getPlpLabIds(req.user!.id);
+    }
+
     const allRuangan = await db.query.peminjamanRuanganTable.findMany({
       where: and(gte(peminjamanRuanganTable.tanggalMulai, start), lte(peminjamanRuanganTable.tanggalMulai, end)),
       with: { laboratorium: true, user: { with: { jurusan: true } } },
     });
 
-    const filtered = labId ? allRuangan.filter(r => r.laboratoriumId === Number(labId)) : allRuangan;
+    let filtered = labId ? allRuangan.filter(r => r.laboratoriumId === Number(labId)) : allRuangan;
+    if (allowedLabIds) filtered = filtered.filter(r => allowedLabIds!.includes(r.laboratoriumId!));
 
     const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const headers = ["No. Peminjaman", "Laboratorium", "Pemohon", "Jurusan Pemohon", "Kategori", "Judul Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "Waktu Mulai", "Waktu Selesai", "Jumlah Peserta", "Keperluan", "Status"];

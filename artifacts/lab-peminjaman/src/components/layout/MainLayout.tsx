@@ -62,6 +62,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: "Inventaris Alat & Bahan", href: "/admin/inventaris", icon: Database, roles: ["admin", "plp"], group: "Operasional" },
   { title: "Verifikasi Pengajuan", href: "/plp/verifikasi", icon: BookOpenCheck, roles: ["admin", "plp"], group: "Operasional" },
   { title: "Laporan & Statistik", href: "/admin/laporan", icon: BarChart3, roles: ["admin"], group: "Operasional" },
+  { title: "Laporan Lab Saya", href: "/plp/laporan", icon: BarChart3, roles: ["plp"], group: "Operasional" },
 
   // Mahasiswa/Dosen group
   { title: "Pinjam Alat", href: "/mahasiswa/peminjaman", icon: ClipboardList, roles: ["mahasiswa", "dosen"], group: "Layanan" },

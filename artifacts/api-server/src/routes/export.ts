@@ -94,10 +94,12 @@ router.get("/users", requireAuth, requireRole("admin"), async (req: AuthRequest,
 // Export peminjaman alat
 router.get("/peminjaman-alat", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
   try {
-    const data = await db.query.peminjamanAlatTable.findMany({
+    const { labId } = req.query;
+    let data = await db.query.peminjamanAlatTable.findMany({
       with: { user: { with: { jurusan: true } }, laboratorium: true, items: { with: { alat: true } } },
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     });
+    if (labId) data = data.filter(p => p.laboratoriumId === Number(labId));
     const csv = toCsv(
       ["No. Peminjaman", "Nama Peminjam", "Jurusan", "Laboratorium", "Alat", "Tgl Pinjam", "Tgl Kembali", "Status", "Keperluan"],
       data.map(p => [
@@ -118,10 +120,12 @@ router.get("/peminjaman-alat", requireAuth, requireRole("admin", "plp"), async (
 // Export permintaan bahan
 router.get("/permintaan-bahan", requireAuth, requireRole("admin", "gudang", "plp"), async (req: AuthRequest, res) => {
   try {
-    const data = await db.query.permintaanBahanTable.findMany({
+    const { labId } = req.query;
+    let data = await db.query.permintaanBahanTable.findMany({
       with: { user: { with: { jurusan: true } }, items: { with: { bahan: true } }, plp: { columns: { id: true, nama: true } } },
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     });
+    if (labId) data = data.filter(p => p.laboratoriumId === Number(labId));
     const csv = toCsv(
       ["No. Permintaan", "Nama Pemohon", "Jurusan", "Tujuan", "PLP", "Bahan", "Tgl Dibutuhkan", "Status", "Keperluan"],
       data.map(p => [
