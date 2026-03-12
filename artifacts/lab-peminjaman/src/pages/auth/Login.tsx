@@ -53,7 +53,7 @@ export default function Login() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
             <div className="flex justify-center mb-8">
               <div className="bg-primary/10 p-3 rounded-2xl">
-                <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Logo" className="w-12 h-12" />
+                <img src={`${import.meta.env.BASE_URL}logo-poltekkes.png`} alt="Logo" className="w-12 h-12 object-contain" />
               </div>
             </div>
             <h2 className="text-3xl font-display font-bold text-foreground text-center tracking-tight">Selamat Datang</h2>

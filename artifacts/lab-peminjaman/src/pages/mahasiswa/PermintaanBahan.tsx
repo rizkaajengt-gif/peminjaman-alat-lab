@@ -2,17 +2,18 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useCreatePermintaanBahan, useGetBahan, useGetLaboratorium, useGetUsers } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { useCreatePermintaanBahan, useGetBahan, useGetLaboratorium, customFetch } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
+import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, CheckCircle, Store, UserCog } from "lucide-react";
+import { Loader2, Trash2, CheckCircle, Store, UserCog, AlertCircle } from "lucide-react";
 
 const schema = z.object({
   laboratoriumId: z.coerce.number().optional(),
@@ -27,7 +28,6 @@ export default function PermintaanBahan() {
   const createMutation = useCreatePermintaanBahan();
   const { data: labs } = useGetLaboratorium({});
   const { data: bahanList } = useGetBahan({});
-  const { data: plpList } = useGetUsers({ role: "plp" as any });
   const [items, setItems] = useState<{ bahanId: number; jumlahDiminta: number }[]>([]);
   const [success, setSuccess] = useState(false);
 
@@ -39,7 +39,33 @@ export default function PermintaanBahan() {
   const tujuan = form.watch("tujuan");
   const labId = form.watch("laboratoriumId");
 
-  const filteredBahan = labId ? bahanList?.filter(b => b.laboratoriumId === labId) : bahanList;
+  const { data: plpByLab } = useQuery<any[]>({
+    queryKey: ["/api/plp-laboratorium", labId],
+    queryFn: () => customFetch(`/api/plp-laboratorium${labId && labId > 0 ? `?laboratoriumId=${labId}` : ""}`),
+    enabled: tujuan === "plp",
+  });
+
+  const plpOptions = (plpByLab || [])
+    .filter((a: any) => a.plp)
+    .map((a: any) => ({ value: String(a.plp.id), label: a.plp.nama, sublabel: a.plp.email }));
+
+  const filteredBahan = labId && labId > 0
+    ? bahanList?.filter(b => b.laboratoriumId === labId)
+    : bahanList;
+
+  const labOptions = (labs || []).map(l => ({
+    value: String(l.id),
+    label: l.nama,
+    sublabel: (l as any).jurusan?.nama,
+  }));
+
+  const bahanOptions = (filteredBahan || [])
+    .filter(b => !items.find(i => i.bahanId === b.id))
+    .map(b => ({
+      value: String(b.id),
+      label: b.nama,
+      sublabel: `${(b as any).laboratorium?.nama || ""} · Stok: ${b.stok} ${b.satuan}`,
+    }));
 
   const addItem = (bahanId: string) => {
     const id = parseInt(bahanId);
@@ -54,6 +80,7 @@ export default function PermintaanBahan() {
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     if (items.length === 0) { toast({ variant: "destructive", title: "Pilih minimal 1 bahan" }); return; }
+    if (tujuan === "plp" && !data.plpId) { toast({ variant: "destructive", title: "Pilih PLP tujuan terlebih dahulu" }); return; }
     createMutation.mutate({ data: { ...data, items } }, {
       onSuccess: () => { setSuccess(true); form.reset(); setItems([]); },
       onError: (e: any) => toast({ variant: "destructive", title: "Gagal", description: e?.data?.message || e.message }),
@@ -75,12 +102,11 @@ export default function PermintaanBahan() {
       <Card className="p-6 md:p-8 rounded-3xl border-none shadow-xl shadow-slate-100">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
-          {/* Tujuan Permintaan */}
           <div className="space-y-2">
             <Label className="font-semibold text-base">Kirim Permintaan Ke</Label>
             <RadioGroup
               defaultValue="gudang"
-              onValueChange={(v) => form.setValue("tujuan", v as any)}
+              onValueChange={(v) => { form.setValue("tujuan", v as any); form.setValue("plpId", undefined); }}
               className="grid grid-cols-2 gap-3"
             >
               <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${tujuan === "gudang" ? "border-primary bg-primary/5" : "border-slate-200 hover:border-slate-300"}`}>
@@ -94,24 +120,46 @@ export default function PermintaanBahan() {
                 <RadioGroupItem value="plp" className="shrink-0" />
                 <div>
                   <div className="flex items-center gap-2"><UserCog className="w-4 h-4 text-primary" /><span className="font-semibold">PLP Laboratorium</span></div>
-                  <p className="text-xs text-muted-foreground mt-0.5">Permintaan langsung ke PLP yang mengelola lab</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Minta kunci & bahan ke PLP lab tujuan</p>
                 </div>
               </label>
             </RadioGroup>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="font-semibold">Lab Terkait{tujuan === "plp" ? " *" : " (Opsional)"}</Label>
+              <SearchableSelect
+                options={labOptions}
+                value={labId ? String(labId) : undefined}
+                onValueChange={(v) => { form.setValue("laboratoriumId", parseInt(v)); form.setValue("plpId", undefined); }}
+                placeholder={tujuan === "plp" ? "Pilih laboratorium tujuan..." : "Filter bahan per lab..."}
+                searchPlaceholder="Cari lab..."
+              />
+            </div>
+
             {tujuan === "plp" && (
               <div className="space-y-1.5 md:col-span-2">
-                <Label className="font-semibold">Pilih PLP Tujuan</Label>
-                <Select onValueChange={(v) => form.setValue("plpId", parseInt(v))}>
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200"><SelectValue placeholder="Pilih PLP yang bertanggung jawab..." /></SelectTrigger>
-                  <SelectContent>
-                    {plpList?.filter(u => u.status === "aktif").map(u => (
-                      <SelectItem key={u.id} value={u.id.toString()}>{u.nama}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="font-semibold">Pilih PLP Tujuan *</Label>
+                {!labId || labId === 0 ? (
+                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    Pilih laboratorium terlebih dahulu untuk melihat PLP yang bertanggung jawab
+                  </div>
+                ) : plpOptions.length === 0 ? (
+                  <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-muted-foreground">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    Tidak ada PLP yang ditugaskan di lab ini. Hubungi Admin.
+                  </div>
+                ) : (
+                  <SearchableSelect
+                    options={plpOptions}
+                    value={form.watch("plpId") ? String(form.watch("plpId")) : undefined}
+                    onValueChange={(v) => form.setValue("plpId", parseInt(v))}
+                    placeholder="Pilih PLP yang bertanggung jawab..."
+                    searchPlaceholder="Cari nama PLP..."
+                  />
+                )}
               </div>
             )}
 
@@ -121,34 +169,22 @@ export default function PermintaanBahan() {
               {form.formState.errors.tanggalDibutuhkan && <p className="text-xs text-destructive">{form.formState.errors.tanggalDibutuhkan.message}</p>}
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="font-semibold">Lab Terkait (Opsional)</Label>
-              <Select onValueChange={(v) => form.setValue("laboratoriumId", parseInt(v))}>
-                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200"><SelectValue placeholder="Filter bahan per lab..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Semua Laboratorium</SelectItem>
-                  {labs?.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.nama}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="md:col-span-2 space-y-1.5">
+            <div className="space-y-1.5 md:col-span-2">
               <Label className="font-semibold">Keperluan / Tujuan Penggunaan</Label>
               <Textarea {...form.register("keperluan")} className="rounded-xl bg-slate-50 border-slate-200 resize-none" rows={2} placeholder="Contoh: Praktikum Kimia Dasar Semester 3" />
               {form.formState.errors.keperluan && <p className="text-xs text-destructive">{form.formState.errors.keperluan.message}</p>}
             </div>
           </div>
 
-          {/* Daftar Bahan */}
           <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
             <h3 className="font-bold text-base">Daftar Bahan yang Diminta</h3>
             {items.map((item, idx) => {
-              const b = filteredBahan?.find(b => b.id === item.bahanId);
+              const b = bahanList?.find(b => b.id === item.bahanId);
               return (
                 <div key={idx} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                   <div className="flex-1">
                     <div className="font-medium text-sm">{b?.nama}</div>
-                    <div className="text-xs text-muted-foreground">Stok: {b?.stok} {b?.satuan} · {b?.laboratorium?.nama}</div>
+                    <div className="text-xs text-muted-foreground">Stok: {b?.stok} {b?.satuan} · {(b as any)?.laboratorium?.nama}</div>
                   </div>
                   <Input type="number" min="1" max={b?.stok || 999} value={item.jumlahDiminta} onChange={e => updateQty(idx, parseInt(e.target.value))} className="h-9 w-20 rounded-lg text-center" />
                   <span className="text-xs text-muted-foreground w-8 shrink-0">{b?.satuan}</span>
@@ -158,14 +194,14 @@ export default function PermintaanBahan() {
             })}
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Tambah Bahan</Label>
-              <Select onValueChange={addItem}>
-                <SelectTrigger className="h-11 rounded-xl bg-white"><SelectValue placeholder="Pilih bahan dari daftar..." /></SelectTrigger>
-                <SelectContent>
-                  {filteredBahan?.filter(b => !items.find(i => i.bahanId === b.id)).map(b => (
-                    <SelectItem key={b.id} value={b.id.toString()}>{b.nama} – {b.laboratorium?.nama} (Stok: {b.stok} {b.satuan})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={bahanOptions}
+                value={undefined}
+                onValueChange={addItem}
+                placeholder="Pilih bahan dari daftar..."
+                searchPlaceholder="Cari nama bahan..."
+                emptyMessage={labId && labId > 0 ? "Tidak ada bahan di lab ini" : "Pilih lab untuk filter bahan"}
+              />
             </div>
           </div>
 

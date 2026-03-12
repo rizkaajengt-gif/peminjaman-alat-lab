@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreatePeminjamanAlat, useGetLaboratorium, useGetAlat } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
 // Simplified schema for frontend validation
@@ -71,19 +71,13 @@ export default function FormPeminjaman() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="font-semibold text-slate-700">Laboratorium</Label>
-              <Select onValueChange={(v) => {
-                const id = parseInt(v);
-                form.setValue("laboratoriumId", id);
-                setSelectedLab(id);
-                setItems([]); // reset items when lab changes
-              }}>
-                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200">
-                  <SelectValue placeholder="Pilih Lab..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {labs?.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.nama}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={(labs || []).map(l => ({ value: l.id.toString(), label: l.nama, sublabel: (l as any).jurusan?.nama }))}
+                value={selectedLab ? String(selectedLab) : undefined}
+                onValueChange={(v) => { const id = parseInt(v); form.setValue("laboratoriumId", id); setSelectedLab(id); setItems([]); }}
+                placeholder="Pilih Lab..."
+                searchPlaceholder="Cari nama lab..."
+              />
             </div>
             
             <div className="space-y-2">
@@ -132,25 +126,20 @@ export default function FormPeminjaman() {
                   );
                 })}
 
-                <div className="flex items-end gap-4 pt-2">
-                   <div className="flex-1 space-y-2">
-                      <Label>Tambah Alat</Label>
-                      <Select onValueChange={(v) => {
-                        const id = parseInt(v);
-                        if (!items.find(i => i.alatId === id)) {
-                          setItems([...items, { alatId: id, jumlah: 1 }]);
-                        }
-                      }}>
-                        <SelectTrigger className="h-12 rounded-xl bg-white">
-                          <SelectValue placeholder="Pilih alat dari lab ini..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {alatList?.filter(a => a.stokTersedia > 0).map(a => (
-                            <SelectItem key={a.id} value={a.id.toString()}>{a.nama} (Tersedia: {a.stokTersedia} {a.satuan})</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                   </div>
+                <div className="space-y-2 pt-2">
+                  <Label>Tambah Alat</Label>
+                  <SearchableSelect
+                    options={(alatList?.filter(a => a.stokTersedia > 0 && !items.find(i => i.alatId === a.id)) || []).map(a => ({
+                      value: a.id.toString(),
+                      label: a.nama,
+                      sublabel: `Tersedia: ${a.stokTersedia} ${a.satuan}`,
+                    }))}
+                    value={undefined}
+                    onValueChange={(v) => { const id = parseInt(v); if (!items.find(i => i.alatId === id)) setItems([...items, { alatId: id, jumlah: 1 }]); }}
+                    placeholder="Pilih alat dari lab ini..."
+                    searchPlaceholder="Cari nama alat..."
+                    emptyMessage="Tidak ada alat tersedia di lab ini"
+                  />
                 </div>
               </div>
             ) : (

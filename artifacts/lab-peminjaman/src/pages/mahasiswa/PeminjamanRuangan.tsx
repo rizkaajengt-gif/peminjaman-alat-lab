@@ -4,12 +4,12 @@ import * as z from "zod";
 import { useState } from "react";
 import { useCreatePeminjamanRuangan, useGetLaboratorium } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
+import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, BookOpen, FlaskConical, Heart } from "lucide-react";
@@ -137,18 +137,17 @@ export default function PeminjamanRuangan() {
           {/* Ruangan */}
           <div className="space-y-1.5">
             <Label className="font-semibold">Ruangan / Laboratorium</Label>
-            <Select onValueChange={(v) => form.setValue("laboratoriumId", parseInt(v))}>
-              <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200">
-                <SelectValue placeholder="Pilih ruangan yang akan dipinjam..." />
-              </SelectTrigger>
-              <SelectContent>
-                {labs?.map(l => (
-                  <SelectItem key={l.id} value={l.id.toString()}>
-                    {l.nama} – {l.lokasi} (Kapasitas: {l.kapasitas})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={(labs || []).map(l => ({
+                value: l.id.toString(),
+                label: l.nama,
+                sublabel: `${l.lokasi} · Kapasitas ${l.kapasitas} orang`,
+              }))}
+              value={form.watch("laboratoriumId") ? String(form.watch("laboratoriumId")) : undefined}
+              onValueChange={(v) => form.setValue("laboratoriumId", parseInt(v))}
+              placeholder="Pilih ruangan yang akan dipinjam..."
+              searchPlaceholder="Cari nama ruangan atau lokasi..."
+            />
             {form.formState.errors.laboratoriumId && <p className="text-xs text-destructive">Pilih ruangan terlebih dahulu</p>}
           </div>
 
