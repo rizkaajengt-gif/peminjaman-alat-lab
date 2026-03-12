@@ -157,11 +157,16 @@ router.put("/:id/status", requireAuth, async (req: AuthRequest, res) => {
     }
 
     if (status === "disiapkan") {
+      const isFromGudang = existing.tujuan === "gudang";
       for (const item of existing.items) {
         const bahan = await db.query.bahanTable.findFirst({ where: eq(bahanTable.id, item.bahanId) });
         if (bahan) {
           const qty = item.jumlahDisetujui || item.jumlahDiminta;
-          await db.update(bahanTable).set({ stok: Math.max(0, bahan.stok - qty) }).where(eq(bahanTable.id, item.bahanId));
+          if (isFromGudang) {
+            await db.update(bahanTable).set({ stokGudang: Math.max(0, bahan.stokGudang - qty), updatedAt: new Date() }).where(eq(bahanTable.id, item.bahanId));
+          } else {
+            await db.update(bahanTable).set({ stok: Math.max(0, bahan.stok - qty), updatedAt: new Date() }).where(eq(bahanTable.id, item.bahanId));
+          }
         }
       }
     }

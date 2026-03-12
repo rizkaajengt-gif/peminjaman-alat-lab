@@ -10,6 +10,7 @@ export const bahanTable = pgTable("bahan", {
   kode: text("kode").notNull().unique(),
   deskripsi: text("deskripsi"),
   stok: integer("stok").notNull().default(0),
+  stokGudang: integer("stok_gudang").notNull().default(0),
   stokMinimal: integer("stok_minimal").notNull().default(0),
   satuan: text("satuan").notNull().default("unit"),
   laboratoriumId: integer("laboratorium_id").notNull().references(() => laboratoriumTable.id),

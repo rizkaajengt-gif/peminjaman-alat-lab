@@ -15,6 +15,7 @@ import laporanRouter from "./laporan.js";
 import exportRouter from "./export.js";
 import importRouter from "./import.js";
 import notifikasiRouter from "./notifikasi.js";
+import transferBahanRouter from "./transfer-bahan.js";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use("/laporan", laporanRouter);
 router.use("/export", exportRouter);
 router.use("/import", importRouter);
 router.use("/notifikasi", notifikasiRouter);
+router.use("/transfer-bahan", transferBahanRouter);
 
 export default router;

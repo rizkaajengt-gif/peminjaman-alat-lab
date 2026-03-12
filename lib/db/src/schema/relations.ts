@@ -9,6 +9,7 @@ import { peminjamanAlatTable, peminjamanAlatItemTable, peminjamanRuanganTable } 
 import { permintaanBahanTable, permintaanBahanItemTable } from "./permintaan";
 import { beritaTable, galeriTable, dokumenTable } from "./konten";
 import { notifikasiTable } from "./notifikasi";
+import { transferBahanPlpTable } from "./transfer-bahan";
 
 export const jurusanRelations = relations(jurusanTable, ({ many }) => ({
   users: many(usersTable),
@@ -101,4 +102,11 @@ export const dokumenRelations = relations(dokumenTable, ({ one }) => ({
 
 export const notifikasiRelations = relations(notifikasiTable, ({ one }) => ({
   createdBy: one(usersTable, { fields: [notifikasiTable.createdBy], references: [usersTable.id] }),
+}));
+
+export const transferBahanPlpRelations = relations(transferBahanPlpTable, ({ one }) => ({
+  bahan: one(bahanTable, { fields: [transferBahanPlpTable.bahanId], references: [bahanTable.id] }),
+  laboratorium: one(laboratoriumTable, { fields: [transferBahanPlpTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  dimintaOleh: one(usersTable, { fields: [transferBahanPlpTable.dimintaOleh], references: [usersTable.id] }),
+  disetujuiOleh: one(usersTable, { fields: [transferBahanPlpTable.disetujuiOleh], references: [usersTable.id] }),
 }));

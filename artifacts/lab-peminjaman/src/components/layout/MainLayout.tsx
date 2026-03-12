@@ -28,6 +28,7 @@ import {
   UserCog,
   BellRing,
   UserCircle,
+  Package,
 } from "lucide-react";
 import { useGetStatistik } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: "Laporan & Statistik", href: "/admin/laporan", icon: BarChart3, roles: ["admin"], group: "Operasional" },
   { title: "Kirim Notifikasi", href: "/admin/notifikasi", icon: BellRing, roles: ["admin"], group: "Operasional" },
   { title: "Laporan Lab Saya", href: "/plp/laporan", icon: BarChart3, roles: ["plp"], group: "Operasional" },
+  { title: "Stok Lab & Transfer", href: "/plp/stok-lab", icon: Package, roles: ["plp"], group: "Operasional" },
 
   // Mahasiswa/Dosen group
   { title: "Pinjam Alat", href: "/mahasiswa/peminjaman", icon: ClipboardList, roles: ["mahasiswa", "dosen"], group: "Layanan" },

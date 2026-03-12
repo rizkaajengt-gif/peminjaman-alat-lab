@@ -8,4 +8,5 @@ export * from "./peminjaman";
 export * from "./permintaan";
 export * from "./konten";
 export * from "./notifikasi";
+export * from "./transfer-bahan";
 export * from "./relations";
