@@ -78,6 +78,35 @@ router.get("/me", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+router.put("/me", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { nama, noHp } = req.body;
+    if (!nama) { res.status(400).json({ message: "Nama wajib diisi" }); return; }
+    await db.update(usersTable).set({ nama, noHp: noHp || null }).where(eq(usersTable.id, req.user!.id));
+    const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, req.user!.id), with: { jurusan: true } });
+    const { password: _, ...rest } = user!;
+    res.json(rest);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.put("/me/password", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { passwordLama, passwordBaru } = req.body;
+    if (!passwordLama || !passwordBaru) { res.status(400).json({ message: "Password lama dan baru wajib diisi" }); return; }
+    if (passwordBaru.length < 6) { res.status(400).json({ message: "Password baru minimal 6 karakter" }); return; }
+    const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, req.user!.id) });
+    if (!user || user.password !== hashPassword(passwordLama)) {
+      res.status(401).json({ message: "Password lama tidak sesuai" }); return;
+    }
+    await db.update(usersTable).set({ password: hashPassword(passwordBaru) }).where(eq(usersTable.id, req.user!.id));
+    res.json({ message: "Password berhasil diubah" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.post("/register", async (req, res) => {
   try {
     const { nama, email, password, role, nim, nip, noHp, jurusanId } = req.body;

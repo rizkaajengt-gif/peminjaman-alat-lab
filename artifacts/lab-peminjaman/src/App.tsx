@@ -28,6 +28,7 @@ import GudangManajemen from "./pages/gudang/ManajemenBahan";
 
 import PrintPermintaan from "./pages/shared/PrintPermintaan";
 import PrintPeminjaman from "./pages/shared/PrintPeminjaman";
+import Profil from "./pages/profil/Profil";
 
 import NotFound from "./pages/not-found";
 
@@ -77,6 +78,9 @@ function Router() {
 
       {/* Gudang */}
       <Route path="/gudang/manajemen">{() => <ProtectedRoute component={GudangManajemen} roles={["gudang", "admin"]} />}</Route>
+
+      {/* Profil (semua role) */}
+      <Route path="/profil">{() => <ProtectedRoute component={Profil} />}</Route>
 
       <Route component={NotFound} />
     </Switch>

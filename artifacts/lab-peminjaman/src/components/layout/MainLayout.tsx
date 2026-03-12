@@ -25,7 +25,10 @@ import {
   ChevronRight,
   GraduationCap,
   UserCog,
+  BellRing,
+  UserCircle,
 } from "lucide-react";
+import { useGetStatistik } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -82,6 +85,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const { toast } = useToast();
+  const { data: stats } = useGetStatistik();
 
   const logoutMutation = useLogout({
     mutation: {
@@ -134,16 +138,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       >
         {/* Logo */}
         <div className="h-16 flex items-center px-4 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
+          {isSidebarOpen ? (
+            <img src={`${import.meta.env.BASE_URL}logo-poltekkes.png`} alt="Poltekkes Tasikmalaya" className="h-9 object-contain" />
+          ) : (
             <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
-              <Building2 size={20} strokeWidth={2.5} />
+              <Building2 size={18} strokeWidth={2.5} />
             </div>
-            {isSidebarOpen && (
-              <span className="font-bold text-lg tracking-tight whitespace-nowrap truncate">
-                SIPE<span className="text-primary">LAB</span>
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Nav */}
@@ -206,6 +207,22 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Notification bell - count pending verifications */}
+            {(["admin", "plp"].includes(user.role)) && (() => {
+              const pendingCount = (stats?.peminjamanAlatMenunggu || 0) + (stats?.peminjamanRuanganMenunggu || 0);
+              return (
+                <Link href="/plp/verifikasi">
+                  <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary">
+                    <BellRing size={18} />
+                    {pendingCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                        {pendingCount > 9 ? "9+" : pendingCount}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
+              );
+            })()}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -229,6 +246,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   <p className="text-xs text-primary capitalize font-medium mt-0.5">{user.role}</p>
                 </div>
+                <Link href="/profil">
+                  <DropdownMenuItem className="cursor-pointer mx-2 rounded-lg gap-2">
+                    <UserCircle className="h-4 w-4 text-teal-600" />
+                    <span>Profil & Keamanan</span>
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => logoutMutation.mutate()}
                   className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer mx-2 mb-1 rounded-lg"

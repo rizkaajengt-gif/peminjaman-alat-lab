@@ -11,8 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, Pencil, Trash2, AlertTriangle, Upload, Download } from "lucide-react";
+import { Loader2, Plus, Search, Pencil, Trash2, AlertTriangle, Upload, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+
+const PAGE_SIZE = 10;
 
 const KONDISI_COLORS: Record<string, string> = {
   baik: "bg-green-100 text-green-700 border-green-200",
@@ -136,8 +138,11 @@ function AlatTab() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
+  const [page, setPage] = useState(1);
   const { data: labs } = useGetLaboratorium({});
   const { data: alat, isLoading } = useGetAlat({ search, laboratoriumId: filterLab ? parseInt(filterLab) : undefined });
+  const totalPages = Math.max(1, Math.ceil((alat?.length || 0) / PAGE_SIZE));
+  const pagedAlat = alat?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const createMutation = useCreateAlat();
   const updateMutation = useUpdateAlat();
   const deleteMutation = useDeleteAlat();
@@ -169,9 +174,9 @@ function AlatTab() {
           <div className="flex gap-2 flex-1">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input placeholder="Cari alat..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl" />
+              <Input placeholder="Cari alat..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9 h-10 rounded-xl" />
             </div>
-            <Select value={filterLab || "_all_"} onValueChange={v => setFilterLab(v === "_all_" ? "" : v)}>
+            <Select value={filterLab || "_all_"} onValueChange={v => { setFilterLab(v === "_all_" ? "" : v); setPage(1); }}>
               <SelectTrigger className="w-44 h-10 rounded-xl"><SelectValue placeholder="Semua Lab" /></SelectTrigger>
               <SelectContent><SelectItem value="_all_">Semua Lab</SelectItem>{labs?.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.nama}</SelectItem>)}</SelectContent>
             </Select>
@@ -198,7 +203,7 @@ function AlatTab() {
             <TableBody>
               {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
               : alat?.length === 0 ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
-              : alat?.map(a => (
+              : pagedAlat?.map(a => (
                 <TableRow key={a.id} className="hover:bg-slate-50/50 border-slate-50">
                   <TableCell className="font-mono text-xs text-slate-500">{a.kode}</TableCell>
                   <TableCell className="font-semibold">{a.nama}</TableCell>
@@ -214,6 +219,18 @@ function AlatTab() {
             </TableBody>
           </Table>
         </div>
+        {totalPages > 1 && (
+          <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {Math.min((page-1)*PAGE_SIZE+1, alat?.length||0)}–{Math.min(page*PAGE_SIZE, alat?.length||0)} dari {alat?.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" disabled={page<=1} onClick={()=>setPage(p=>p-1)}><ChevronLeft className="w-4 h-4"/></Button>
+              {Array.from({length:Math.min(5,totalPages)},(_,i)=>{const p=Math.max(1,Math.min(totalPages-4,page-2))+i;return(<Button key={p} variant={p===page?"default":"outline"} size="icon" className="h-8 w-8 rounded-lg text-xs" onClick={()=>setPage(p)}>{p}</Button>);})}
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)}><ChevronRight className="w-4 h-4"/></Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
@@ -258,8 +275,11 @@ function BahanTab() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
+  const [page, setPage] = useState(1);
   const { data: labs } = useGetLaboratorium({});
   const { data: bahan, isLoading } = useGetBahan({ search });
+  const totalPages = Math.max(1, Math.ceil((bahan?.length || 0) / PAGE_SIZE));
+  const pagedBahan = bahan?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const createMutation = useCreateBahan();
   const updateMutation = useUpdateBahan();
   const deleteMutation = useDeleteBahan();
@@ -290,7 +310,7 @@ function BahanTab() {
         <div className="p-5 border-b border-slate-100 flex gap-3 justify-between">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input placeholder="Cari bahan..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl" />
+            <Input placeholder="Cari bahan..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9 h-10 rounded-xl" />
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowImport(true)} className="h-10 rounded-xl gap-2 text-sm">
@@ -313,7 +333,7 @@ function BahanTab() {
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
             : bahan?.length === 0 ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
-            : bahan?.map(b => (
+            : pagedBahan?.map(b => (
               <TableRow key={b.id} className="hover:bg-slate-50/50 border-slate-50">
                 <TableCell className="font-mono text-xs text-slate-500">{b.kode}</TableCell>
                 <TableCell>
@@ -333,6 +353,18 @@ function BahanTab() {
             ))}
           </TableBody>
         </Table>
+        {totalPages > 1 && (
+          <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {Math.min((page-1)*PAGE_SIZE+1, bahan?.length||0)}–{Math.min(page*PAGE_SIZE, bahan?.length||0)} dari {bahan?.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" disabled={page<=1} onClick={()=>setPage(p=>p-1)}><ChevronLeft className="w-4 h-4"/></Button>
+              {Array.from({length:Math.min(5,totalPages)},(_,i)=>{const p=Math.max(1,Math.min(totalPages-4,page-2))+i;return(<Button key={p} variant={p===page?"default":"outline"} size="icon" className="h-8 w-8 rounded-lg text-xs" onClick={()=>setPage(p)}>{p}</Button>);})}
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)}><ChevronRight className="w-4 h-4"/></Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

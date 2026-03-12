@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, MoreHorizontal, CheckCircle2, XCircle, Pencil, Trash2, UserCog, Upload, Download, KeyRound, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Search, MoreHorizontal, CheckCircle2, XCircle, Pencil, Trash2, UserCog, Upload, Download, KeyRound, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+
+const PAGE_SIZE = 10;
 
 const ROLES = ["admin", "mahasiswa", "plp", "gudang", "dosen"] as const;
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", mahasiswa: "Mahasiswa", plp: "PLP", gudang: "Gudang", dosen: "Dosen" };
@@ -30,6 +32,7 @@ export default function AdminUsers() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<string>("");
+  const [page, setPage] = useState(1);
   const [showDialog, setShowDialog] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
 
@@ -47,6 +50,8 @@ export default function AdminUsers() {
   const [savingPass, setSavingPass] = useState(false);
 
   const { data: users, isLoading } = useGetUsers({ search, role: filterRole as any || undefined });
+  const totalPages = Math.max(1, Math.ceil((users?.length || 0) / PAGE_SIZE));
+  const pagedUsers = users?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const { data: jurusanList } = useGetJurusan();
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
@@ -141,9 +146,9 @@ export default function AdminUsers() {
           <div className="flex gap-2 flex-1">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input placeholder="Cari nama / email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl" />
+              <Input placeholder="Cari nama / email..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-9 h-10 rounded-xl" />
             </div>
-            <Select value={filterRole || "_all_"} onValueChange={v => setFilterRole(v === "_all_" ? "" : v)}>
+            <Select value={filterRole || "_all_"} onValueChange={v => { setFilterRole(v === "_all_" ? "" : v); setPage(1); }}>
               <SelectTrigger className="w-36 h-10 rounded-xl"><SelectValue placeholder="Semua Peran" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all_">Semua Peran</SelectItem>
@@ -178,7 +183,7 @@ export default function AdminUsers() {
                 <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></TableCell></TableRow>
               ) : users?.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
-              ) : users?.map(u => (
+              ) : pagedUsers?.map(u => (
                 <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-50">
                   <TableCell>
                     <div className="font-semibold text-slate-800">{u.nama}</div>
@@ -213,6 +218,31 @@ export default function AdminUsers() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Menampilkan {Math.min((page - 1) * PAGE_SIZE + 1, users?.length || 0)}–{Math.min(page * PAGE_SIZE, users?.length || 0)} dari {users?.length} pengguna
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
+                return (
+                  <Button key={p} variant={p === page ? "default" : "outline"} size="icon" className="h-8 w-8 rounded-lg text-xs" onClick={() => setPage(p)}>
+                    {p}
+                  </Button>
+                );
+              })}
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* ── Dialog Tambah / Edit User ── */}

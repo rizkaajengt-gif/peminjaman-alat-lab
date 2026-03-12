@@ -9,10 +9,7 @@ export default function Landing() {
       {/* Navbar */}
       <header className="fixed top-0 inset-x-0 h-20 glass z-50 px-6 lg:px-12 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Logo" className="w-10 h-10 object-contain" />
-          <span className="font-display font-bold text-xl tracking-tight text-foreground">
-            SIPE<span className="text-primary">LAB</span>
-          </span>
+          <img src={`${import.meta.env.BASE_URL}logo-poltekkes.png`} alt="Poltekkes Tasikmalaya" className="h-10 object-contain" />
         </div>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
