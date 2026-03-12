@@ -2,6 +2,7 @@ import { pgTable, serial, text, integer, timestamp, pgEnum } from "drizzle-orm/p
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { laboratoriumTable } from "./laboratorium";
+import { usersTable } from "./users";
 
 export const kondisiEnum = pgEnum("kondisi_alat", ["baik", "rusak_ringan", "rusak_berat"]);
 
@@ -15,6 +16,7 @@ export const alatTable = pgTable("alat", {
   stokTersedia: integer("stok_tersedia").notNull().default(0),
   satuan: text("satuan").notNull().default("unit"),
   laboratoriumId: integer("laboratorium_id").notNull().references(() => laboratoriumTable.id),
+  penanggungjawabId: integer("penanggungjawab_id").references(() => usersTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

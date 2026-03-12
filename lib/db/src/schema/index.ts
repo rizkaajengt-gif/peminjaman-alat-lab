@@ -3,6 +3,7 @@ export * from "./laboratorium";
 export * from "./users";
 export * from "./alat";
 export * from "./bahan";
+export * from "./plp-laboratorium";
 export * from "./peminjaman";
 export * from "./permintaan";
 export * from "./konten";

@@ -1,8 +1,8 @@
-# Peminjaman Lab Poltekkes Tasikmalaya
+# SIPELAB - Sistem Informasi Peminjaman Laboratorium
 
 ## Overview
 
-Aplikasi web Peminjaman Laboratorium Terpadu Poltekkes Kemenkes Tasikmalaya. Sistem berbasis web untuk mengelola peminjaman alat, permintaan bahan habis pakai, dan pemesanan ruangan laboratorium secara lintas unit/jurusan.
+Aplikasi web SIPELAB Poltekkes Kemenkes Tasikmalaya. Sistem manajemen laboratorium terpadu multi-jurusan yang mendukung 5 peran pengguna: peminjaman alat, permintaan bahan habis pakai (ke PLP atau Gudang), pemesanan ruangan, penugasan PLP ke laboratorium, inventaris, dan laporan lengkap.
 
 ## Stack
 
@@ -32,19 +32,45 @@ lib/
 
 ## User Roles
 
-1. **Admin** - Full access: users, labs, departments, reports, news, gallery
-2. **Mahasiswa** - Student: borrow equipment/rooms, request materials
-3. **PLP** (Laboran) - Verify borrowing requests, manage lab inventory, verify student registrations
-4. **Gudang** - Manage material stock, verify material requests
-5. **Dosen** - News and gallery creation
+1. **Admin** - Full access: users, labs, jurusan, PLP assignment, inventory, reports
+2. **Mahasiswa** - Student: borrow equipment/rooms, request materials (to PLP or Gudang)
+3. **PLP** (Laboran) - Verify borrowing requests, manage assigned lab inventory, fulfill material requests directed to them
+4. **Gudang** - Manage material stock, verify gudang-directed material requests
+5. **Dosen** - Same as mahasiswa for borrowing/requesting
 
 ## Demo Accounts
 
-- Admin: `admin@poltekkes-tasikmalaya.ac.id` / `Admin123!`
-- Mahasiswa: `mahasiswa@poltekkes-tasikmalaya.ac.id` / `Password123!`
-- PLP: `plp@poltekkes-tasikmalaya.ac.id` / `Password123!`
-- Gudang: `gudang@poltekkes-tasikmalaya.ac.id` / `Password123!`
-- Dosen: `dosen@poltekkes-tasikmalaya.ac.id` / `Password123!`
+- Admin: `admin` / `Admin123!` (or `admin@poltekkes-tasikmalaya.ac.id`)
+- Mahasiswa: `mahasiswa` / `Password123!`
+- PLP: `plp` / `Password123!`
+- Gudang: `gudang` / `Password123!`
+- Dosen: `dosen` / `Password123!`
+
+## Frontend Pages
+
+### Admin
+- `/admin/jurusan` - CRUD manajemen jurusan/prodi
+- `/admin/users` - Manajemen pengguna
+- `/admin/laboratorium` - Manajemen laboratorium
+- `/admin/plp-penugasan` - Assign PLP ke laboratorium (via plp_laboratorium junction table)
+- `/admin/inventaris` - Inventaris alat & bahan (with PIC/penanggungjawab)
+- `/admin/laporan` - Statistik & laporan dengan export CSV
+
+### Mahasiswa/Dosen
+- `/mahasiswa/peminjaman` - Form peminjaman alat
+- `/mahasiswa/ruangan` - Form peminjaman ruangan
+- `/mahasiswa/permintaan` - Permintaan bahan (tujuan: plp atau gudang)
+- `/mahasiswa/riwayat` - Riwayat transaksi dengan tombol cetak
+
+### PLP
+- `/plp/verifikasi` - Verifikasi semua pengajuan
+
+### Gudang
+- `/gudang/manajemen` - Stok bahan & verifikasi permintaan bahan
+
+### Print Views (no sidebar)
+- `/print/permintaan-bahan/:id` - Surat permintaan bahan habis pakai (printable)
+- `/print/peminjaman-alat/:id` - Surat peminjaman alat laboratorium (printable)
 
 ## Key API Endpoints
 
@@ -52,20 +78,26 @@ lib/
 - POST /api/auth/logout - Logout
 - GET /api/auth/me - Current user
 - POST /api/auth/register - Self-registration
-- GET/POST /api/users - User management
+- GET/POST /api/users - User management (supports ?role= filter)
 - GET/POST /api/jurusan - Department management
 - GET/POST /api/laboratorium - Lab management
-- GET/POST /api/alat - Equipment management
-- GET/POST /api/bahan - Material management
+- GET/POST /api/alat - Equipment (includes penanggungjawab PIC)
+- GET/POST /api/bahan - Material (includes penanggungjawab PIC)
+- GET/POST /api/plp-laboratorium - PLP-lab assignment management
+- GET /api/plp-laboratorium/my-labs - PLP's assigned labs
 - GET/POST /api/peminjaman-alat - Equipment borrowing
 - PUT /api/peminjaman-alat/:id/status - Approve/reject borrowing
 - GET/POST /api/peminjaman-ruangan - Room booking
 - PUT /api/peminjaman-ruangan/:id/status - Approve/reject room booking
-- GET/POST /api/permintaan-bahan - Material requests
+- GET/POST /api/permintaan-bahan - Material requests (tujuan: plp|gudang, plpId for plp)
 - PUT /api/permintaan-bahan/:id/status - Approve/reject material request
-- GET/POST /api/berita - News management
-- GET/POST /api/galeri - Gallery management
-- GET/POST /api/dokumen - Documents management
+- GET /api/export/alat - Export alat to CSV
+- GET /api/export/bahan - Export bahan to CSV
+- GET /api/export/users - Export users to CSV
+- GET /api/export/peminjaman-alat - Export laporan peminjaman alat to CSV
+- GET /api/export/permintaan-bahan - Export laporan permintaan bahan to CSV
+- GET /api/export/alat/template - Download import template alat CSV
+- GET /api/export/bahan/template - Download import template bahan CSV
 - GET /api/laporan/statistik - Dashboard statistics
 - GET /api/laporan/peminjaman - Borrowing reports
 
@@ -74,12 +106,13 @@ lib/
 - `jurusan` - Academic departments
 - `laboratorium` - Laboratories
 - `users` - Users with role enum (admin/mahasiswa/plp/gudang/dosen)
-- `alat` - Equipment/tools
-- `bahan` - Materials/consumables
+- `alat` - Equipment/tools (with penanggungjawabId FK to users)
+- `bahan` - Materials/consumables (with penanggungjawabId FK to users)
+- `plp_laboratorium` - Junction table: PLP assignments to labs
 - `peminjaman_alat` - Equipment borrowing transactions
 - `peminjaman_alat_item` - Items per borrowing
 - `peminjaman_ruangan` - Room booking transactions
-- `permintaan_bahan` - Material request transactions
+- `permintaan_bahan` - Material requests (tujuan: plp|gudang, plpId, catatan)
 - `permintaan_bahan_item` - Items per request
 - `berita` - News posts
 - `galeri` - Photo/video gallery

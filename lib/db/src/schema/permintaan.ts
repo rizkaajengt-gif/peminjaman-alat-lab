@@ -6,16 +6,19 @@ import { laboratoriumTable } from "./laboratorium";
 import { bahanTable } from "./bahan";
 
 export const statusPermintaanEnum = pgEnum("status_permintaan", ["menunggu", "disetujui", "ditolak", "disiapkan"]);
+export const tujuanPermintaanEnum = pgEnum("tujuan_permintaan", ["plp", "gudang"]);
 
 export const permintaanBahanTable = pgTable("permintaan_bahan", {
   id: serial("id").primaryKey(),
   noPermintaan: text("no_permintaan").notNull().unique(),
   userId: integer("user_id").notNull().references(() => usersTable.id),
   laboratoriumId: integer("laboratorium_id").references(() => laboratoriumTable.id),
+  tujuan: tujuanPermintaanEnum("tujuan").notNull().default("gudang"),
+  plpId: integer("plp_id").references(() => usersTable.id),
   tanggalDibutuhkan: date("tanggal_dibutuhkan").notNull(),
   keperluan: text("keperluan").notNull(),
   status: statusPermintaanEnum("status").notNull().default("menunggu"),
-  catatanGudang: text("catatan_gudang"),
+  catatan: text("catatan"),
   verifikasiOleh: integer("verifikasi_oleh").references(() => usersTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

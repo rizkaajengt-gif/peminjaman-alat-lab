@@ -4,6 +4,7 @@ import { jurusanTable } from "./jurusan";
 import { laboratoriumTable } from "./laboratorium";
 import { alatTable } from "./alat";
 import { bahanTable } from "./bahan";
+import { plpLaboratoriumTable } from "./plp-laboratorium";
 import { peminjamanAlatTable, peminjamanAlatItemTable, peminjamanRuanganTable } from "./peminjaman";
 import { permintaanBahanTable, permintaanBahanItemTable } from "./permintaan";
 import { beritaTable, galeriTable, dokumenTable } from "./konten";
@@ -21,6 +22,7 @@ export const laboratoriumRelations = relations(laboratoriumTable, ({ one, many }
   peminjamanAlat: many(peminjamanAlatTable),
   peminjamanRuangan: many(peminjamanRuanganTable),
   permintaanBahan: many(permintaanBahanTable),
+  plpAssignments: many(plpLaboratoriumTable),
 }));
 
 export const usersRelations = relations(usersTable, ({ one, many }) => ({
@@ -32,15 +34,25 @@ export const usersRelations = relations(usersTable, ({ one, many }) => ({
   berita: many(beritaTable),
   galeri: many(galeriTable),
   dokumen: many(dokumenTable),
+  plpLaboratorium: many(plpLaboratoriumTable),
+  alatDikelola: many(alatTable),
+  bahanDikelola: many(bahanTable),
+}));
+
+export const plpLaboratoriumRelations = relations(plpLaboratoriumTable, ({ one }) => ({
+  plp: one(usersTable, { fields: [plpLaboratoriumTable.plpId], references: [usersTable.id] }),
+  laboratorium: one(laboratoriumTable, { fields: [plpLaboratoriumTable.laboratoriumId], references: [laboratoriumTable.id] }),
 }));
 
 export const alatRelations = relations(alatTable, ({ one, many }) => ({
   laboratorium: one(laboratoriumTable, { fields: [alatTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  penanggungjawab: one(usersTable, { fields: [alatTable.penanggungjawabId], references: [usersTable.id] }),
   peminjamanItems: many(peminjamanAlatItemTable),
 }));
 
 export const bahanRelations = relations(bahanTable, ({ one, many }) => ({
   laboratorium: one(laboratoriumTable, { fields: [bahanTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  penanggungjawab: one(usersTable, { fields: [bahanTable.penanggungjawabId], references: [usersTable.id] }),
   permintaanItems: many(permintaanBahanItemTable),
 }));
 
@@ -63,6 +75,8 @@ export const peminjamanRuanganRelations = relations(peminjamanRuanganTable, ({ o
 export const permintaanBahanRelations = relations(permintaanBahanTable, ({ one, many }) => ({
   user: one(usersTable, { fields: [permintaanBahanTable.userId], references: [usersTable.id] }),
   laboratorium: one(laboratoriumTable, { fields: [permintaanBahanTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  plp: one(usersTable, { fields: [permintaanBahanTable.plpId], references: [usersTable.id] }),
+  verifikator: one(usersTable, { fields: [permintaanBahanTable.verifikasiOleh], references: [usersTable.id] }),
   items: many(permintaanBahanItemTable),
 }));
 

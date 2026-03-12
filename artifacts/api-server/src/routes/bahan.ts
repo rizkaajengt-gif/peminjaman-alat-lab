@@ -12,7 +12,10 @@ router.get("/", async (req, res) => {
     if (laboratoriumId) conditions.push(eq(bahanTable.laboratoriumId, Number(laboratoriumId)));
     let data = await db.query.bahanTable.findMany({
       where: conditions.length > 0 ? and(...conditions) : undefined,
-      with: { laboratorium: { with: { jurusan: true } } },
+      with: {
+        laboratorium: { with: { jurusan: true } },
+        penanggungjawab: { columns: { id: true, nama: true, email: true } },
+      },
     });
     if (search) {
       const s = (search as string).toLowerCase();
@@ -24,25 +27,30 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", requireAuth, requireRole("admin", "gudang"), async (req: AuthRequest, res) => {
+router.post("/", requireAuth, requireRole("admin", "gudang", "plp"), async (req: AuthRequest, res) => {
   try {
-    const { nama, kode, deskripsi, stok, stokMinimal, satuan, laboratoriumId } = req.body;
+    const { nama, kode, deskripsi, stok, stokMinimal, satuan, laboratoriumId, penanggungjawabId } = req.body;
     if (!nama || !kode || !laboratoriumId) { res.status(400).json({ message: "Data tidak lengkap" }); return; }
-    const [item] = await db.insert(bahanTable).values({ nama, kode, deskripsi: deskripsi || null, stok: stok || 0, stokMinimal: stokMinimal || 0, satuan: satuan || "unit", laboratoriumId }).returning();
-    res.status(201).json(item);
+    const [item] = await db.insert(bahanTable).values({
+      nama, kode, deskripsi: deskripsi || null, stok: stok || 0, stokMinimal: stokMinimal || 0,
+      satuan: satuan || "unit", laboratoriumId, penanggungjawabId: penanggungjawabId || null
+    }).returning();
+    const result = await db.query.bahanTable.findFirst({ where: eq(bahanTable.id, item.id), with: { laboratorium: true, penanggungjawab: { columns: { id: true, nama: true } } } });
+    res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-router.put("/:id", requireAuth, requireRole("admin", "gudang"), async (req: AuthRequest, res) => {
+router.put("/:id", requireAuth, requireRole("admin", "gudang", "plp"), async (req: AuthRequest, res) => {
   try {
-    const { nama, kode, deskripsi, stok, stokMinimal, satuan, laboratoriumId } = req.body;
+    const { nama, kode, deskripsi, stok, stokMinimal, satuan, laboratoriumId, penanggungjawabId } = req.body;
     const [item] = await db.update(bahanTable)
-      .set({ nama, kode, deskripsi: deskripsi || null, stok, stokMinimal, satuan, laboratoriumId, updatedAt: new Date() })
+      .set({ nama, kode, deskripsi: deskripsi || null, stok, stokMinimal, satuan, laboratoriumId, penanggungjawabId: penanggungjawabId || null, updatedAt: new Date() })
       .where(eq(bahanTable.id, Number(req.params.id))).returning();
     if (!item) { res.status(404).json({ message: "Bahan tidak ditemukan" }); return; }
-    res.json(item);
+    const result = await db.query.bahanTable.findFirst({ where: eq(bahanTable.id, item.id), with: { laboratorium: true, penanggungjawab: { columns: { id: true, nama: true } } } });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -55,6 +63,14 @@ router.delete("/:id", requireAuth, requireRole("admin", "gudang"), async (req: A
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
+});
+
+// Import template download
+router.get("/template", (req, res) => {
+  const csv = "kode,nama,deskripsi,stok,stokMinimal,satuan,laboratoriumId,penanggungjawabId\nBH-001,Alkohol 70%,Bahan desinfektan,100,20,mL,1,\nBH-002,HCl 1M,Larutan asam klorida,50,10,mL,1,";
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=template_bahan.csv");
+  res.send(csv);
 });
 
 export default router;

@@ -23,9 +23,11 @@ export default function AdminLaporan() {
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
+  const exportFile = (url: string) => window.open(url, "_blank");
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Laporan" description="Statistik dan rekap transaksi peminjaman laboratorium." />
+      <PageHeader title="Laporan & Statistik" description="Statistik dan rekap transaksi peminjaman laboratorium." />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -40,6 +42,25 @@ export default function AdminLaporan() {
           </Card>
         ))}
       </div>
+
+      {/* Export Section */}
+      <Card className="p-5 border-none shadow-sm rounded-2xl">
+        <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+          <Download className="w-4 h-4 text-primary" />Export Data ke CSV
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { label: "Laporan Peminjaman Alat", url: "/api/export/peminjaman-alat" },
+            { label: "Laporan Permintaan Bahan", url: "/api/export/permintaan-bahan" },
+            { label: "Data Inventaris Alat", url: "/api/export/alat" },
+            { label: "Data Pengguna", url: "/api/export/users" },
+          ].map(e => (
+            <Button key={e.url} variant="outline" onClick={() => exportFile(e.url)} className="h-10 rounded-xl gap-2 justify-start text-sm">
+              <Download className="w-3.5 h-3.5 text-teal-600 shrink-0" />{e.label}
+            </Button>
+          ))}
+        </div>
+      </Card>
 
       <Card className="p-6 border-none shadow-lg rounded-2xl">
         <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">

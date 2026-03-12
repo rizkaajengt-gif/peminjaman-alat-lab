@@ -12,7 +12,10 @@ router.get("/", async (req, res) => {
     if (laboratoriumId) conditions.push(eq(alatTable.laboratoriumId, Number(laboratoriumId)));
     let data = await db.query.alatTable.findMany({
       where: conditions.length > 0 ? and(...conditions) : undefined,
-      with: { laboratorium: { with: { jurusan: true } } },
+      with: {
+        laboratorium: { with: { jurusan: true } },
+        penanggungjawab: { columns: { id: true, nama: true, email: true } },
+      },
     });
     if (search) {
       const s = (search as string).toLowerCase();
@@ -26,10 +29,11 @@ router.get("/", async (req, res) => {
 
 router.post("/", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
   try {
-    const { nama, kode, deskripsi, kondisi, stok, satuan, laboratoriumId } = req.body;
+    const { nama, kode, deskripsi, kondisi, stok, satuan, laboratoriumId, penanggungjawabId } = req.body;
     if (!nama || !kode || !laboratoriumId) { res.status(400).json({ message: "Data tidak lengkap" }); return; }
-    const [item] = await db.insert(alatTable).values({ nama, kode, deskripsi: deskripsi || null, kondisi: kondisi || "baik", stok: stok || 0, stokTersedia: stok || 0, satuan: satuan || "unit", laboratoriumId }).returning();
-    res.status(201).json(item);
+    const [item] = await db.insert(alatTable).values({ nama, kode, deskripsi: deskripsi || null, kondisi: kondisi || "baik", stok: stok || 0, stokTersedia: stok || 0, satuan: satuan || "unit", laboratoriumId, penanggungjawabId: penanggungjawabId || null }).returning();
+    const result = await db.query.alatTable.findFirst({ where: eq(alatTable.id, item.id), with: { laboratorium: true, penanggungjawab: { columns: { id: true, nama: true } } } });
+    res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -50,12 +54,13 @@ router.get("/:id", async (req, res) => {
 
 router.put("/:id", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
   try {
-    const { nama, kode, deskripsi, kondisi, stok, satuan, laboratoriumId } = req.body;
+    const { nama, kode, deskripsi, kondisi, stok, satuan, laboratoriumId, penanggungjawabId } = req.body;
     const [item] = await db.update(alatTable)
-      .set({ nama, kode, deskripsi: deskripsi || null, kondisi, stok, stokTersedia: stok, satuan, laboratoriumId, updatedAt: new Date() })
+      .set({ nama, kode, deskripsi: deskripsi || null, kondisi, stok, stokTersedia: stok, satuan, laboratoriumId, penanggungjawabId: penanggungjawabId || null, updatedAt: new Date() })
       .where(eq(alatTable.id, Number(req.params.id))).returning();
     if (!item) { res.status(404).json({ message: "Alat tidak ditemukan" }); return; }
-    res.json(item);
+    const result = await db.query.alatTable.findFirst({ where: eq(alatTable.id, item.id), with: { laboratorium: true, penanggungjawab: { columns: { id: true, nama: true } } } });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

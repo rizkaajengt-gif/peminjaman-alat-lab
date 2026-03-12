@@ -24,6 +24,8 @@ import {
   ClipboardList,
   Warehouse,
   ChevronRight,
+  GraduationCap,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -48,12 +50,16 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "mahasiswa", "plp", "gudang", "dosen"] },
 
-  // Admin group
-  { title: "Data Pengguna", href: "/admin/users", icon: Users, roles: ["admin"], group: "Administrasi" },
-  { title: "Data Laboratorium", href: "/admin/laboratorium", icon: Building2, roles: ["admin"], group: "Administrasi" },
-  { title: "Inventaris Alat & Bahan", href: "/admin/inventaris", icon: Database, roles: ["admin", "plp"], group: "Administrasi" },
-  { title: "Verifikasi Pengajuan", href: "/plp/verifikasi", icon: BookOpenCheck, roles: ["admin", "plp"], group: "Administrasi" },
-  { title: "Laporan", href: "/admin/laporan", icon: BarChart3, roles: ["admin"], group: "Administrasi" },
+  // Admin group - Master Data
+  { title: "Data Pengguna", href: "/admin/users", icon: Users, roles: ["admin"], group: "Master Data" },
+  { title: "Data Jurusan", href: "/admin/jurusan", icon: GraduationCap, roles: ["admin"], group: "Master Data" },
+  { title: "Data Laboratorium", href: "/admin/laboratorium", icon: Building2, roles: ["admin"], group: "Master Data" },
+  { title: "Penugasan PLP", href: "/admin/plp-penugasan", icon: UserCog, roles: ["admin"], group: "Master Data" },
+
+  // Admin group - Operasional
+  { title: "Inventaris Alat & Bahan", href: "/admin/inventaris", icon: Database, roles: ["admin", "plp"], group: "Operasional" },
+  { title: "Verifikasi Pengajuan", href: "/plp/verifikasi", icon: BookOpenCheck, roles: ["admin", "plp"], group: "Operasional" },
+  { title: "Laporan & Statistik", href: "/admin/laporan", icon: BarChart3, roles: ["admin"], group: "Operasional" },
 
   // Mahasiswa/Dosen group
   { title: "Pinjam Alat", href: "/mahasiswa/peminjaman", icon: ClipboardList, roles: ["mahasiswa", "dosen"], group: "Layanan" },
@@ -66,8 +72,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const GROUP_LABELS: Record<string, string> = {
-  Administrasi: "Administrasi",
-  Layanan: "Layanan Mahasiswa",
+  "Master Data": "Master Data",
+  Operasional: "Operasional",
+  Layanan: "Layanan",
   Gudang: "Gudang",
 };
 
