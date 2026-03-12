@@ -1,0 +1,220 @@
+import { useState } from "react";
+import { useGetUsers, useCreateUser, useUpdateUser, useDeleteUser, useVerifyUser, useGetJurusan } from "@workspace/api-client-react";
+import { PageHeader } from "@/components/ui-custom/PageHeader";
+import { StatusBadge } from "@/components/ui-custom/StatusBadge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Plus, Search, MoreHorizontal, CheckCircle2, XCircle, Pencil, Trash2, UserCog } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+
+const ROLES = ["admin", "mahasiswa", "plp", "gudang", "dosen"] as const;
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", mahasiswa: "Mahasiswa", plp: "PLP", gudang: "Gudang", dosen: "Dosen" };
+const ROLE_COLORS: Record<string, string> = {
+  admin: "bg-red-100 text-red-700 border-red-200",
+  mahasiswa: "bg-blue-100 text-blue-700 border-blue-200",
+  plp: "bg-purple-100 text-purple-700 border-purple-200",
+  gudang: "bg-orange-100 text-orange-700 border-orange-200",
+  dosen: "bg-green-100 text-green-700 border-green-200",
+};
+
+export default function AdminUsers() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("");
+  const [showDialog, setShowDialog] = useState(false);
+  const [editUser, setEditUser] = useState<any>(null);
+
+  const { data: users, isLoading } = useGetUsers({ search, role: filterRole as any || undefined });
+  const { data: jurusanList } = useGetJurusan();
+  const createMutation = useCreateUser();
+  const updateMutation = useUpdateUser();
+  const deleteMutation = useDeleteUser();
+  const verifyMutation = useVerifyUser();
+
+  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", jurusanId: "", status: "aktif" });
+
+  const openCreate = () => { setEditUser(null); setForm({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", jurusanId: "", status: "aktif" }); setShowDialog(true); };
+  const openEdit = (u: any) => { setEditUser(u); setForm({ nama: u.nama, email: u.email, password: "", role: u.role, nim: u.nim || "", nip: u.nip || "", noHp: u.noHp || "", jurusanId: u.jurusanId?.toString() || "", status: u.status }); setShowDialog(true); };
+
+  const handleSave = () => {
+    const payload: any = { nama: form.nama, email: form.email, role: form.role as any, nim: form.nim || null, nip: form.nip || null, noHp: form.noHp || null, jurusanId: form.jurusanId ? parseInt(form.jurusanId) : null, status: form.status as any };
+    if (!editUser) payload.password = form.password;
+    const mutation = editUser
+      ? updateMutation.mutateAsync({ id: editUser.id, data: payload })
+      : createMutation.mutateAsync({ data: payload });
+    mutation.then(() => {
+      toast({ title: editUser ? "User diperbarui" : "User dibuat" });
+      setShowDialog(false);
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+    }).catch((e: any) => toast({ variant: "destructive", title: "Gagal", description: e?.data?.message || e.message }));
+  };
+
+  const handleVerify = (id: number, status: "aktif" | "ditolak") => {
+    verifyMutation.mutate({ id, data: { status } }, {
+      onSuccess: () => { toast({ title: status === "aktif" ? "User diaktifkan" : "User ditolak" }); qc.invalidateQueries({ queryKey: ["/api/users"] }); },
+      onError: (e: any) => toast({ variant: "destructive", title: "Gagal", description: e?.data?.message }),
+    });
+  };
+
+  const handleDelete = (id: number, nama: string) => {
+    if (!confirm(`Hapus user "${nama}"?`)) return;
+    deleteMutation.mutate({ id }, {
+      onSuccess: () => { toast({ title: "User dihapus" }); qc.invalidateQueries({ queryKey: ["/api/users"] }); },
+      onError: (e: any) => toast({ variant: "destructive", title: "Gagal", description: e?.data?.message }),
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Manajemen Pengguna" description="Kelola semua akun pengguna sistem SIPELAB." />
+
+      <Card className="border-none shadow-lg rounded-2xl overflow-hidden bg-white">
+        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row gap-3 justify-between">
+          <div className="flex gap-2 flex-1">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input placeholder="Cari nama / email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl" />
+            </div>
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="w-36 h-10 rounded-xl">
+                <SelectValue placeholder="Semua Peran" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Semua Peran</SelectItem>
+                {ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={openCreate} className="h-10 rounded-xl">
+            <Plus className="w-4 h-4 mr-2" /> Tambah User
+          </Button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow className="hover:bg-transparent border-slate-100">
+                <TableHead className="font-semibold">Nama</TableHead>
+                <TableHead className="font-semibold">Peran</TableHead>
+                <TableHead className="font-semibold">NIM / NIP</TableHead>
+                <TableHead className="font-semibold">Jurusan</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="text-right font-semibold">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></TableCell></TableRow>
+              ) : users?.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
+              ) : users?.map(u => (
+                <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-50">
+                  <TableCell>
+                    <div className="font-semibold text-slate-800">{u.nama}</div>
+                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-xs font-semibold ${ROLE_COLORS[u.role]}`}>{ROLE_LABELS[u.role]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm font-mono text-slate-600">{u.nim || u.nip || "-"}</TableCell>
+                  <TableCell className="text-sm">{(u as any).jurusan?.nama || "-"}</TableCell>
+                  <TableCell><StatusBadge status={u.status} /></TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary rounded-lg h-8 w-8"><MoreHorizontal className="w-4 h-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl w-44">
+                        <DropdownMenuItem onClick={() => openEdit(u)} className="gap-2"><Pencil className="w-4 h-4" />Edit</DropdownMenuItem>
+                        {u.status === "menunggu" && <>
+                          <DropdownMenuItem onClick={() => handleVerify(u.id, "aktif")} className="gap-2 text-green-600"><CheckCircle2 className="w-4 h-4" />Aktifkan</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleVerify(u.id, "ditolak")} className="gap-2 text-red-600"><XCircle className="w-4 h-4" />Tolak</DropdownMenuItem>
+                        </>}
+                        {u.status === "aktif" && <DropdownMenuItem onClick={() => handleVerify(u.id, "ditolak")} className="gap-2 text-orange-600"><UserCog className="w-4 h-4" />Nonaktifkan</DropdownMenuItem>}
+                        {u.status !== "aktif" && u.status !== "menunggu" && <DropdownMenuItem onClick={() => handleVerify(u.id, "aktif")} className="gap-2 text-green-600"><CheckCircle2 className="w-4 h-4" />Aktifkan</DropdownMenuItem>}
+                        <DropdownMenuItem onClick={() => handleDelete(u.id, u.nama)} className="gap-2 text-destructive"><Trash2 className="w-4 h-4" />Hapus</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="rounded-2xl max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editUser ? "Edit User" : "Tambah User Baru"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 space-y-1.5">
+              <Label>Nama Lengkap</Label>
+              <Input value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} className="rounded-xl h-10" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="rounded-xl h-10" />
+            </div>
+            {!editUser && <div className="space-y-1.5">
+              <Label>Password</Label>
+              <Input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="rounded-xl h-10" />
+            </div>}
+            <div className="space-y-1.5">
+              <Label>Peran</Label>
+              <Select value={form.role} onValueChange={v => setForm({...form, role: v})}>
+                <SelectTrigger className="rounded-xl h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>{ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={v => setForm({...form, status: v})}>
+                <SelectTrigger className="rounded-xl h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aktif">Aktif</SelectItem>
+                  <SelectItem value="menunggu">Menunggu</SelectItem>
+                  <SelectItem value="nonaktif">Nonaktif</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>NIM (jika Mahasiswa)</Label>
+              <Input value={form.nim} onChange={e => setForm({...form, nim: e.target.value})} className="rounded-xl h-10" placeholder="2021XXXXXX" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>NIP (jika Staf)</Label>
+              <Input value={form.nip} onChange={e => setForm({...form, nip: e.target.value})} className="rounded-xl h-10" />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label>Jurusan</Label>
+              <Select value={form.jurusanId} onValueChange={v => setForm({...form, jurusanId: v})}>
+                <SelectTrigger className="rounded-xl h-10"><SelectValue placeholder="Pilih Jurusan (opsional)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-- Tidak Ada --</SelectItem>
+                  {jurusanList?.map(j => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)} className="rounded-xl">Batal</Button>
+            <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending} className="rounded-xl">
+              {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="animate-spin w-4 h-4" /> : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

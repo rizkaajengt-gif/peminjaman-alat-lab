@@ -3,73 +3,76 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-// Context
 import { AuthProvider, useAuth } from "./lib/auth-context";
-
-// Layouts
 import { MainLayout } from "./components/layout/MainLayout";
 
-// Pages
 import Landing from "./pages/public/Landing";
 import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register"; // Assuming standard implementation based on schema
+import Register from "./pages/auth/Register";
 import DashboardHome from "./pages/dashboard/Home";
-import MasterData from "./pages/admin/MasterData";
+
+import AdminUsers from "./pages/admin/Users";
+import AdminLaboratorium from "./pages/admin/Laboratorium";
+import AdminInventaris from "./pages/admin/Inventaris";
+import AdminLaporan from "./pages/admin/Laporan";
+
 import FormPeminjaman from "./pages/mahasiswa/Peminjaman";
-import VerifikasiPlp from "./pages/plp/Verifikasi";
+import PeminjamanRuangan from "./pages/mahasiswa/PeminjamanRuangan";
+import PermintaanBahan from "./pages/mahasiswa/PermintaanBahan";
+import Riwayat from "./pages/mahasiswa/Riwayat";
+
+import PlpVerifikasi from "./pages/plp/VerifikasiLengkap";
+import GudangManajemen from "./pages/gudang/ManajemenBahan";
+
 import NotFound from "./pages/not-found";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false, staleTime: 30000 } }
+});
 
-// Route Guard
-function ProtectedRoute({ component: Component, roles }: { component: any, roles?: string[] }) {
+function ProtectedRoute({ component: Component, roles }: { component: React.ComponentType; roles?: string[] }) {
   const { isAuthenticated, user, isLoading } = useAuth();
-  
-  if (isLoading) return null; // handled by provider
+  if (isLoading) return null;
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (roles && user && !roles.includes(user.role)) return <Redirect to="/dashboard" />;
-
-  return (
-    <MainLayout>
-      <Component />
-    </MainLayout>
-  );
+  return <MainLayout><Component /></MainLayout>;
 }
 
 function Router() {
   return (
     <Switch>
-      {/* Public */}
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
-      <Route path="/register" component={Login} /> {/* Alias for simplicity in generation */}
+      <Route path="/register" component={Register} />
 
-      {/* Protected - Common */}
-      <Route path="/dashboard">
-        {() => <ProtectedRoute component={DashboardHome} />}
-      </Route>
+      <Route path="/dashboard">{() => <ProtectedRoute component={DashboardHome} />}</Route>
 
-      {/* Protected - Admin */}
-      <Route path="/admin/master">
-        {() => <ProtectedRoute component={MasterData} roles={["admin"]} />}
-      </Route>
+      {/* Admin */}
+      <Route path="/admin/users">{() => <ProtectedRoute component={AdminUsers} roles={["admin"]} />}</Route>
+      <Route path="/admin/laboratorium">{() => <ProtectedRoute component={AdminLaboratorium} roles={["admin"]} />}</Route>
+      <Route path="/admin/inventaris">{() => <ProtectedRoute component={AdminInventaris} roles={["admin", "plp"]} />}</Route>
+      <Route path="/admin/master">{() => <ProtectedRoute component={AdminUsers} roles={["admin"]} />}</Route>
+      <Route path="/admin/laporan">{() => <ProtectedRoute component={AdminLaporan} roles={["admin"]} />}</Route>
 
-      {/* Protected - Mahasiswa */}
-      <Route path="/mahasiswa/peminjaman">
-        {() => <ProtectedRoute component={FormPeminjaman} roles={["mahasiswa"]} />}
-      </Route>
+      {/* Mahasiswa */}
+      <Route path="/mahasiswa/peminjaman">{() => <ProtectedRoute component={FormPeminjaman} roles={["mahasiswa", "dosen"]} />}</Route>
+      <Route path="/mahasiswa/ruangan">{() => <ProtectedRoute component={PeminjamanRuangan} roles={["mahasiswa", "dosen"]} />}</Route>
+      <Route path="/mahasiswa/permintaan">{() => <ProtectedRoute component={PermintaanBahan} roles={["mahasiswa", "plp", "dosen"]} />}</Route>
+      <Route path="/mahasiswa/riwayat">{() => <ProtectedRoute component={Riwayat} roles={["mahasiswa", "dosen"]} />}</Route>
 
-      {/* Protected - PLP */}
-      <Route path="/plp/verifikasi">
-        {() => <ProtectedRoute component={VerifikasiPlp} roles={["plp"]} />}
-      </Route>
+      {/* PLP */}
+      <Route path="/plp/verifikasi">{() => <ProtectedRoute component={PlpVerifikasi} roles={["plp", "admin"]} />}</Route>
+      <Route path="/plp/inventaris">{() => <ProtectedRoute component={AdminInventaris} roles={["plp"]} />}</Route>
+
+      {/* Gudang */}
+      <Route path="/gudang/manajemen">{() => <ProtectedRoute component={GudangManajemen} roles={["gudang", "admin"]} />}</Route>
 
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -83,5 +86,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;
