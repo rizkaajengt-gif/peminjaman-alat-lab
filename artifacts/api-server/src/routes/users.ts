@@ -102,6 +102,23 @@ router.delete("/:id", requireAuth, requireRole("admin"), async (req: AuthRequest
   }
 });
 
+router.put("/:id/password", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      res.status(400).json({ message: "Password minimal 6 karakter" }); return;
+    }
+    const [user] = await db.update(usersTable)
+      .set({ password: hashPassword(password), updatedAt: new Date() })
+      .where(eq(usersTable.id, Number(req.params.id)))
+      .returning();
+    if (!user) { res.status(404).json({ message: "User tidak ditemukan" }); return; }
+    res.json({ message: "Password berhasil diperbarui" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.put("/:id/verify", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
   try {
     const { status, catatan } = req.body;

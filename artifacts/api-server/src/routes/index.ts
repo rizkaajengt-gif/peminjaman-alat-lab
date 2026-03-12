@@ -13,6 +13,7 @@ import permintaanBahanRouter from "./permintaan-bahan.js";
 import kontenRouter from "./konten.js";
 import laporanRouter from "./laporan.js";
 import exportRouter from "./export.js";
+import importRouter from "./import.js";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use("/permintaan-bahan", permintaanBahanRouter);
 router.use(kontenRouter);
 router.use("/laporan", laporanRouter);
 router.use("/export", exportRouter);
+router.use("/import", importRouter);
 
 export default router;
