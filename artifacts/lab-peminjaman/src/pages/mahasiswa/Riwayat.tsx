@@ -1,14 +1,17 @@
-import { useGetPeminjamanAlat, useGetPeminjamanRuangan, useGetPermintaanBahan } from "@workspace/api-client-react";
+import { useGetPeminjamanAlat, useGetPeminjamanRuangan, useGetPermintaanBahan, customFetch } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { StatusBadge } from "@/components/ui-custom/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, ClipboardList, CalendarDays, FlaskConical, Printer } from "lucide-react";
+import { Loader2, ClipboardList, CalendarDays, FlaskConical, Printer, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useLocation } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 function formatDate(d: string | undefined) {
   if (!d) return "-";
@@ -17,6 +20,8 @@ function formatDate(d: string | undefined) {
 
 export default function MahasiswaRiwayat() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const { data: peminjamanAlat, isLoading: l1 } = useGetPeminjamanAlat({});
   const { data: peminjamanRuangan, isLoading: l2 } = useGetPeminjamanRuangan({});
   const { data: permintaanBahan, isLoading: l3 } = useGetPermintaanBahan({});
@@ -24,6 +29,15 @@ export default function MahasiswaRiwayat() {
   const openPrint = (type: string, id: number) => {
     window.open(`${import.meta.env.BASE_URL}print/${type}/${id}`, "_blank");
   };
+
+  const requestKembali = useMutation({
+    mutationFn: (id: number) => customFetch(`/api/peminjaman-alat/${id}/request-kembali`, { method: "POST" }),
+    onSuccess: () => {
+      toast({ title: "Pengajuan pengembalian terkirim", description: "PLP akan memverifikasi kondisi alat." });
+      qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] });
+    },
+    onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message || "Gagal mengajukan pengembalian" }),
+  });
 
   return (
     <div className="space-y-6">
@@ -64,7 +78,17 @@ export default function MahasiswaRiwayat() {
                     <TableCell className="text-sm">{formatDate(p.tanggalPinjam)}</TableCell>
                     <TableCell className="text-sm">{formatDate(p.tanggalKembali)}</TableCell>
                     <TableCell><StatusBadge status={p.status} /></TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
+                      {p.status === "dipinjam" && p.requestKembali !== "menunggu" && p.requestKembali !== "selesai" && (
+                        <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-orange-300 text-orange-700 hover:bg-orange-50 gap-1" title="Ajukan Pengembalian"
+                          disabled={requestKembali.isPending}
+                          onClick={() => requestKembali.mutate(p.id)}>
+                          <RotateCcw className="w-3 h-3" />Kembalikan
+                        </Button>
+                      )}
+                      {p.requestKembali === "menunggu" && (
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Menunggu Verifikasi</Badge>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak Surat" onClick={() => openPrint("peminjaman-alat", p.id)}>
                         <Printer className="w-4 h-4" />
                       </Button>

@@ -1,0 +1,322 @@
+import { useState } from "react";
+import { useGetPeminjamanAlat, useGetPeminjamanRuangan, useGetPermintaanBahan, useUpdatePeminjamanAlatStatus, customFetch } from "@workspace/api-client-react";
+import { PageHeader } from "@/components/ui-custom/PageHeader";
+import { StatusBadge } from "@/components/ui-custom/StatusBadge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, ClipboardList, CalendarDays, FlaskConical, RotateCcw, CheckCircle2, Printer } from "lucide-react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+
+function fmt(d?: string) {
+  if (!d) return "-";
+  try { return format(new Date(d), "dd MMM yyyy", { locale: id }); } catch { return d; }
+}
+
+function openPrint(type: string, itemId: number) {
+  window.open(`${import.meta.env.BASE_URL}print/${type}/${itemId}`, "_blank");
+}
+
+const KONDISI_LABELS: Record<string, string> = {
+  baik: "Baik / Dapat Digunakan",
+  cacat: "Cacat (Kerusakan Ringan)",
+  rusak: "Rusak Berat",
+};
+
+export default function PlpRiwayatPengembalian() {
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Riwayat & Pengembalian" description="Pantau riwayat peminjaman mahasiswa dan verifikasi kondisi pengembalian alat." />
+      <Tabs defaultValue="pengembalian">
+        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4">
+          <TabsTrigger value="pengembalian" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <RotateCcw className="w-4 h-4" />Pengembalian Alat
+          </TabsTrigger>
+          <TabsTrigger value="laporan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <CheckCircle2 className="w-4 h-4" />Laporan Pengembalian
+          </TabsTrigger>
+          <TabsTrigger value="riwayat-alat" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <ClipboardList className="w-4 h-4" />Riwayat Peminjaman Alat
+          </TabsTrigger>
+          <TabsTrigger value="riwayat-ruangan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <CalendarDays className="w-4 h-4" />Riwayat Ruangan
+          </TabsTrigger>
+          <TabsTrigger value="riwayat-bahan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <FlaskConical className="w-4 h-4" />Riwayat Bahan
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="pengembalian"><VerifikasiPengembalianTab /></TabsContent>
+        <TabsContent value="laporan"><LaporanPengembalianTab /></TabsContent>
+        <TabsContent value="riwayat-alat"><RiwayatAlatTab /></TabsContent>
+        <TabsContent value="riwayat-ruangan"><RiwayatRuanganTab /></TabsContent>
+        <TabsContent value="riwayat-bahan"><RiwayatBahanTab /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function VerifikasiPengembalianTab() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [selected, setSelected] = useState<any>(null);
+  const [catatan, setCatatan] = useState("");
+  const [kondisi, setKondisi] = useState("baik");
+  const updateStatus = useUpdatePeminjamanAlatStatus();
+
+  const { data: all, isLoading } = useGetPeminjamanAlat({ status: "dipinjam" as any });
+  const pending = all?.filter((p: any) => p.requestKembali === "menunggu") || [];
+
+  const handleVerifikasi = () => {
+    if (!selected) return;
+    updateStatus.mutate({ id: selected.id, data: { status: "dikembalikan", catatan, kondisiKembali: kondisi } as any }, {
+      onSuccess: () => {
+        toast({ title: "Pengembalian diverifikasi", description: `Kondisi alat: ${KONDISI_LABELS[kondisi]}` });
+        setSelected(null); setCatatan(""); setKondisi("baik");
+        qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] });
+      },
+      onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message }),
+    });
+  };
+
+  return (
+    <>
+      <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-2">
+          <RotateCcw className="text-primary w-5 h-5" />
+          <h3 className="font-semibold">Alat yang Menunggu Verifikasi Pengembalian</h3>
+          <Badge variant="outline" className="ml-auto bg-orange-50 text-orange-700 border-orange-200">{pending.length} menunggu</Badge>
+        </div>
+        <Table>
+          <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+            <TableHead className="font-semibold">No. Peminjaman</TableHead>
+            <TableHead className="font-semibold">Peminjam</TableHead>
+            <TableHead className="font-semibold">Lab</TableHead>
+            <TableHead className="font-semibold">Alat</TableHead>
+            <TableHead className="font-semibold">Tgl Harus Kembali</TableHead>
+            <TableHead className="text-right font-semibold">Aksi</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+            : pending.length === 0 ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada pengembalian yang perlu diverifikasi</TableCell></TableRow>
+            : pending.map((p: any) => (
+              <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
+                <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.nip || p.user?.role}</div></TableCell>
+                <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</TableCell>
+                <TableCell className="text-sm">{fmt(p.tanggalKembali)}</TableCell>
+                <TableCell className="text-right space-x-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak" onClick={() => openPrint("peminjaman-alat", p.id)}><Printer className="w-4 h-4" /></Button>
+                  <Button size="sm" className="rounded-lg h-8 text-xs bg-orange-600 hover:bg-orange-700" onClick={() => { setSelected(p); setCatatan(""); setKondisi("baik"); }}>Verifikasi</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader><DialogTitle>Verifikasi Pengembalian Alat</DialogTitle></DialogHeader>
+          {selected && (
+            <div className="space-y-4 py-2">
+              <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Peminjam</span><span className="font-bold">{selected.user?.nama}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Lab</span><span>{selected.laboratorium?.nama}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Alat</span><span className="text-right max-w-xs text-xs">{selected.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</span></div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-semibold">Kondisi Alat Dikembalikan *</Label>
+                <Select value={kondisi} onValueChange={setKondisi}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baik">Baik / Dapat Digunakan Kembali</SelectItem>
+                    <SelectItem value="cacat">Cacat (Kerusakan Ringan)</SelectItem>
+                    <SelectItem value="rusak">Rusak Berat</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Catatan (Opsional)</Label>
+                <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Deskripsi kondisi alat..." className="rounded-xl resize-none" rows={2} />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">Batal</Button>
+            <Button onClick={handleVerifikasi} disabled={updateStatus.isPending} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
+              {updateStatus.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Konfirmasi Dikembalikan</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function LaporanPengembalianTab() {
+  const { data, isLoading } = useGetPeminjamanAlat({ status: "dikembalikan" as any });
+
+  const kondisiColor: Record<string, string> = {
+    baik: "bg-green-50 text-green-700 border-green-200",
+    cacat: "bg-amber-50 text-amber-700 border-amber-200",
+    rusak: "bg-red-50 text-red-700 border-red-200",
+  };
+
+  return (
+    <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex items-center gap-2">
+        <CheckCircle2 className="text-green-600 w-5 h-5" />
+        <h3 className="font-semibold">Daftar Laporan Pengembalian Alat</h3>
+        <Badge variant="outline" className="ml-auto bg-green-50 text-green-700 border-green-200">{data?.length || 0} data</Badge>
+      </div>
+      <Table>
+        <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+          <TableHead className="font-semibold">No. Peminjaman</TableHead>
+          <TableHead className="font-semibold">Peminjam</TableHead>
+          <TableHead className="font-semibold">Lab</TableHead>
+          <TableHead className="font-semibold">Alat</TableHead>
+          <TableHead className="font-semibold">Tgl Kembali</TableHead>
+          <TableHead className="font-semibold">Kondisi</TableHead>
+          <TableHead className="text-right font-semibold">Cetak</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {isLoading ? <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+          : data?.length === 0 ? <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Belum ada data pengembalian</TableCell></TableRow>
+          : data?.map((p: any) => (
+            <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+              <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
+              <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.nip}</div></TableCell>
+              <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
+              <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</TableCell>
+              <TableCell className="text-sm">{fmt(p.tanggalDikembalikan)}</TableCell>
+              <TableCell>
+                {p.kondisiKembali ? (
+                  <Badge variant="outline" className={`text-xs ${kondisiColor[p.kondisiKembali] || "bg-slate-50 text-slate-600"}`}>
+                    {KONDISI_LABELS[p.kondisiKembali] || p.kondisiKembali}
+                  </Badge>
+                ) : <span className="text-muted-foreground text-xs">—</span>}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => openPrint("peminjaman-alat", p.id)}><Printer className="w-4 h-4" /></Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
+
+function RiwayatAlatTab() {
+  const { data, isLoading } = useGetPeminjamanAlat({});
+  return (
+    <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+      <Table>
+        <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+          <TableHead className="font-semibold">No. Peminjaman</TableHead>
+          <TableHead className="font-semibold">Peminjam</TableHead>
+          <TableHead className="font-semibold">Lab</TableHead>
+          <TableHead className="font-semibold">Alat</TableHead>
+          <TableHead className="font-semibold">Tgl Pinjam</TableHead>
+          <TableHead className="font-semibold">Status</TableHead>
+          <TableHead className="text-right">Cetak</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {isLoading ? <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+          : data?.length === 0 ? <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
+          : data?.map((p: any) => (
+            <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+              <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
+              <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div></TableCell>
+              <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
+              <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</TableCell>
+              <TableCell className="text-sm">{fmt(p.tanggalPinjam)}</TableCell>
+              <TableCell><StatusBadge status={p.status} /></TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => openPrint("peminjaman-alat", p.id)}><Printer className="w-4 h-4" /></Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
+
+function RiwayatRuanganTab() {
+  const { data, isLoading } = useGetPeminjamanRuangan({});
+  return (
+    <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+      <Table>
+        <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+          <TableHead className="font-semibold">No. Peminjaman</TableHead>
+          <TableHead className="font-semibold">Peminjam</TableHead>
+          <TableHead className="font-semibold">Ruangan</TableHead>
+          <TableHead className="font-semibold">Tanggal</TableHead>
+          <TableHead className="font-semibold">Kategori</TableHead>
+          <TableHead className="font-semibold">Status</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+          : data?.length === 0 ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
+          : data?.map((p: any) => (
+            <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+              <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
+              <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div></TableCell>
+              <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
+              <TableCell className="text-sm">{fmt(p.tanggalMulai)} — {fmt(p.tanggalSelesai)}</TableCell>
+              <TableCell className="text-sm capitalize">{p.kategori?.replace(/_/g, " ")}</TableCell>
+              <TableCell><StatusBadge status={p.status} /></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
+
+function RiwayatBahanTab() {
+  const { data, isLoading } = useGetPermintaanBahan({});
+  return (
+    <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+      <Table>
+        <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+          <TableHead className="font-semibold">No. Permintaan</TableHead>
+          <TableHead className="font-semibold">Pemohon</TableHead>
+          <TableHead className="font-semibold">Bahan</TableHead>
+          <TableHead className="font-semibold">Tgl Dibutuhkan</TableHead>
+          <TableHead className="font-semibold">Status</TableHead>
+          <TableHead className="text-right">Cetak</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+          : data?.length === 0 ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
+          : data?.map((p: any) => (
+            <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+              <TableCell className="font-mono text-xs font-bold text-primary">{p.noPermintaan}</TableCell>
+              <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div></TableCell>
+              <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{p.items?.map((i: any) => `${i.bahan?.nama} (${i.jumlahDiminta})`).join(", ")}</TableCell>
+              <TableCell className="text-sm">{fmt(p.tanggalDibutuhkan)}</TableCell>
+              <TableCell><StatusBadge status={p.status} /></TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => openPrint("permintaan-bahan", p.id)}><Printer className="w-4 h-4" /></Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}

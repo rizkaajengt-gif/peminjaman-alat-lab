@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/lib/auth-context";
-import { useLogout } from "@workspace/api-client-react";
+import { useLogout, customFetch } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -39,6 +40,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
 interface NavItem {
@@ -61,7 +64,9 @@ const NAV_ITEMS: NavItem[] = [
   // Admin group - Operasional
   { title: "Inventaris Alat & Bahan", href: "/admin/inventaris", icon: Database, roles: ["admin", "plp"], group: "Operasional" },
   { title: "Verifikasi Pengajuan", href: "/plp/verifikasi", icon: BookOpenCheck, roles: ["admin", "plp"], group: "Operasional" },
+  { title: "Riwayat & Pengembalian", href: "/plp/riwayat-pengembalian", icon: FileBox, roles: ["plp", "admin"], group: "Operasional" },
   { title: "Laporan & Statistik", href: "/admin/laporan", icon: BarChart3, roles: ["admin"], group: "Operasional" },
+  { title: "Kirim Notifikasi", href: "/admin/notifikasi", icon: BellRing, roles: ["admin"], group: "Operasional" },
   { title: "Laporan Lab Saya", href: "/plp/laporan", icon: BarChart3, roles: ["plp"], group: "Operasional" },
 
   // Mahasiswa/Dosen group
@@ -81,6 +86,67 @@ const GROUP_LABELS: Record<string, string> = {
   Layanan: "Layanan",
   Gudang: "Gudang",
 };
+
+function NotifikasiBell({ role, stats }: { role: string; stats: any }) {
+  const { data: notifikasi } = useQuery({
+    queryKey: ["/api/notifikasi"],
+    queryFn: () => customFetch("/api/notifikasi"),
+    refetchInterval: 60000,
+  });
+  const list = (notifikasi as any[]) || [];
+  const pendingVerif = (["admin", "plp"].includes(role)) ? ((stats?.peminjamanAlatMenunggu || 0) + (stats?.peminjamanRuanganMenunggu || 0)) : 0;
+  const totalBadge = list.length + pendingVerif;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary">
+          <BellRing size={18} />
+          {totalBadge > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              {totalBadge > 9 ? "9+" : totalBadge}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0 rounded-2xl shadow-xl" align="end">
+        <div className="p-3 border-b border-slate-100 flex items-center gap-2">
+          <BellRing className="w-4 h-4 text-primary" />
+          <span className="font-semibold text-sm">Notifikasi</span>
+        </div>
+        <ScrollArea className="max-h-72">
+          {(["admin", "plp"].includes(role)) && pendingVerif > 0 && (
+            <Link href="/plp/verifikasi">
+              <div className="px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50">
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5 w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
+                  <div>
+                    <p className="text-xs font-semibold">Ada {pendingVerif} pengajuan menunggu verifikasi</p>
+                    <p className="text-xs text-muted-foreground">Klik untuk ke halaman verifikasi</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+          {list.length === 0 && pendingVerif === 0 && (
+            <div className="py-8 text-center text-muted-foreground text-xs">Tidak ada notifikasi</div>
+          )}
+          {list.map((n: any) => (
+            <div key={n.id} className="px-3 py-2.5 hover:bg-slate-50 border-b border-slate-50 last:border-0">
+              <div className="flex items-start gap-2">
+                <span className="mt-0.5 w-2 h-2 rounded-full bg-primary shrink-0"></span>
+                <div>
+                  <p className="text-xs font-semibold">{n.judul}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{n.pesan}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -209,22 +275,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Notification bell - count pending verifications */}
-            {(["admin", "plp"].includes(user.role)) && (() => {
-              const pendingCount = (stats?.peminjamanAlatMenunggu || 0) + (stats?.peminjamanRuanganMenunggu || 0);
-              return (
-                <Link href="/plp/verifikasi">
-                  <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary">
-                    <BellRing size={18} />
-                    {pendingCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                        {pendingCount > 9 ? "9+" : pendingCount}
-                      </span>
-                    )}
-                  </Button>
-                </Link>
-              );
-            })()}
+            <NotifikasiBell role={user.role} stats={stats} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

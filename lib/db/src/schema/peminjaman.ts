@@ -21,6 +21,8 @@ export const peminjamanAlatTable = pgTable("peminjaman_alat", {
   status: statusPeminjamanEnum("status").notNull().default("menunggu"),
   catatanPlp: text("catatan_plp"),
   verifikasiOleh: integer("verifikasi_oleh").references(() => usersTable.id),
+  requestKembali: text("request_kembali"),
+  kondisiKembali: text("kondisi_kembali"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

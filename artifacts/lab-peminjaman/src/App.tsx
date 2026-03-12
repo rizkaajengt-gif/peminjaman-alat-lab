@@ -26,7 +26,9 @@ import JadwalRuangan from "./pages/mahasiswa/JadwalRuangan";
 
 import PlpVerifikasi from "./pages/plp/VerifikasiLengkap";
 import PlpLaporan from "./pages/plp/Laporan";
+import PlpRiwayatPengembalian from "./pages/plp/RiwayatPengembalian";
 import GudangManajemen from "./pages/gudang/ManajemenBahan";
+import AdminNotifikasi from "./pages/admin/Notifikasi";
 
 import PrintPermintaan from "./pages/shared/PrintPermintaan";
 import PrintPeminjaman from "./pages/shared/PrintPeminjaman";
@@ -66,6 +68,7 @@ function Router() {
       <Route path="/admin/inventaris">{() => <ProtectedRoute component={AdminInventaris} roles={["admin", "plp"]} />}</Route>
       <Route path="/admin/plp-penugasan">{() => <ProtectedRoute component={AdminPenugasanPlp} roles={["admin"]} />}</Route>
       <Route path="/admin/laporan">{() => <ProtectedRoute component={AdminLaporan} roles={["admin"]} />}</Route>
+      <Route path="/admin/notifikasi">{() => <ProtectedRoute component={AdminNotifikasi} roles={["admin"]} />}</Route>
 
       {/* Mahasiswa / Dosen */}
       <Route path="/mahasiswa/peminjaman">{() => <ProtectedRoute component={FormPeminjaman} roles={["mahasiswa", "dosen"]} />}</Route>
@@ -79,6 +82,7 @@ function Router() {
       <Route path="/plp/inventaris">{() => <ProtectedRoute component={AdminInventaris} roles={["plp"]} />}</Route>
       <Route path="/plp/permintaan">{() => <ProtectedRoute component={GudangManajemen} roles={["plp"]} />}</Route>
       <Route path="/plp/laporan">{() => <ProtectedRoute component={PlpLaporan} roles={["plp"]} />}</Route>
+      <Route path="/plp/riwayat-pengembalian">{() => <ProtectedRoute component={PlpRiwayatPengembalian} roles={["plp", "admin"]} />}</Route>
 
       {/* Gudang */}
       <Route path="/gudang/manajemen">{() => <ProtectedRoute component={GudangManajemen} roles={["gudang", "admin"]} />}</Route>

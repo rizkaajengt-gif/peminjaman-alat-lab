@@ -113,8 +113,17 @@ router.put("/:id/status", requireAuth, requireRole("plp", "admin"), async (req: 
       }
     }
 
+    const { kondisiKembali } = req.body;
     const [updated] = await db.update(peminjamanAlatTable)
-      .set({ status, catatanPlp: catatan || null, verifikasiOleh: req.user!.id, updatedAt: new Date(), tanggalDikembalikan: status === "dikembalikan" ? new Date().toISOString().split("T")[0] : undefined })
+      .set({
+        status,
+        catatanPlp: catatan || null,
+        verifikasiOleh: req.user!.id,
+        updatedAt: new Date(),
+        tanggalDikembalikan: status === "dikembalikan" ? new Date().toISOString().split("T")[0] : undefined,
+        kondisiKembali: status === "dikembalikan" ? (kondisiKembali || null) : undefined,
+        requestKembali: status === "dikembalikan" ? "selesai" : undefined,
+      })
       .where(eq(peminjamanAlatTable.id, Number(req.params.id))).returning();
 
     const result = await db.query.peminjamanAlatTable.findFirst({
@@ -123,6 +132,25 @@ router.put("/:id/status", requireAuth, requireRole("plp", "admin"), async (req: 
     });
     res.json(result);
   } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/:id/request-kembali", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const peminjaman = await db.query.peminjamanAlatTable.findFirst({
+      where: eq(peminjamanAlatTable.id, Number(req.params.id)),
+    });
+    if (!peminjaman) { res.status(404).json({ message: "Data tidak ditemukan" }); return; }
+    if (peminjaman.userId !== req.user!.id && !["plp", "admin"].includes(req.user!.role)) {
+      res.status(403).json({ message: "Tidak diizinkan" }); return;
+    }
+    if (peminjaman.status !== "dipinjam") { res.status(400).json({ message: "Hanya bisa mengajukan pengembalian saat status dipinjam" }); return; }
+    const [updated] = await db.update(peminjamanAlatTable)
+      .set({ requestKembali: "menunggu", updatedAt: new Date() })
+      .where(eq(peminjamanAlatTable.id, Number(req.params.id))).returning();
+    res.json(updated);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });

@@ -14,6 +14,7 @@ import kontenRouter from "./konten.js";
 import laporanRouter from "./laporan.js";
 import exportRouter from "./export.js";
 import importRouter from "./import.js";
+import notifikasiRouter from "./notifikasi.js";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(kontenRouter);
 router.use("/laporan", laporanRouter);
 router.use("/export", exportRouter);
 router.use("/import", importRouter);
+router.use("/notifikasi", notifikasiRouter);
 
 export default router;

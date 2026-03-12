@@ -8,6 +8,7 @@ import { plpLaboratoriumTable } from "./plp-laboratorium";
 import { peminjamanAlatTable, peminjamanAlatItemTable, peminjamanRuanganTable } from "./peminjaman";
 import { permintaanBahanTable, permintaanBahanItemTable } from "./permintaan";
 import { beritaTable, galeriTable, dokumenTable } from "./konten";
+import { notifikasiTable } from "./notifikasi";
 
 export const jurusanRelations = relations(jurusanTable, ({ many }) => ({
   users: many(usersTable),
@@ -96,4 +97,8 @@ export const galeriRelations = relations(galeriTable, ({ one }) => ({
 export const dokumenRelations = relations(dokumenTable, ({ one }) => ({
   uploader: one(usersTable, { fields: [dokumenTable.uploaderId], references: [usersTable.id] }),
   laboratorium: one(laboratoriumTable, { fields: [dokumenTable.laboratoriumId], references: [laboratoriumTable.id] }),
+}));
+
+export const notifikasiRelations = relations(notifikasiTable, ({ one }) => ({
+  createdBy: one(usersTable, { fields: [notifikasiTable.createdBy], references: [usersTable.id] }),
 }));
