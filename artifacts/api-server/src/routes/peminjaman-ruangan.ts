@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, peminjamanRuanganTable } from "@workspace/db";
+import { db, peminjamanRuanganTable, usersTable } from "@workspace/db";
 import { eq, and, SQL } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
+import { kirimNotifWa, formatPesanPeminjamanRuangan } from "../lib/notifikasi.js";
 
 const router = Router();
 
@@ -40,20 +41,39 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
 
 router.post("/", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { laboratoriumId, tanggalMulai, tanggalSelesai, waktuMulai, waktuSelesai, keperluan, jumlahPeserta } = req.body;
-    if (!laboratoriumId || !tanggalMulai || !tanggalSelesai || !waktuMulai || !waktuSelesai || !keperluan) {
+    const { laboratoriumId, tanggalMulai, tanggalSelesai, waktuMulai, waktuSelesai, keperluan, kategori, judulKegiatan, jumlahPeserta } = req.body;
+    if (!laboratoriumId || !tanggalMulai || !tanggalSelesai || !waktuMulai || !waktuSelesai || !keperluan || !kategori) {
       res.status(400).json({ message: "Data tidak lengkap" }); return;
     }
     const noPeminjaman = generateNo("PR");
     const [item] = await db.insert(peminjamanRuanganTable).values({
       noPeminjaman, userId: req.user!.id, laboratoriumId,
       tanggalMulai, tanggalSelesai, waktuMulai, waktuSelesai,
-      keperluan, jumlahPeserta: jumlahPeserta || 1, status: "menunggu",
+      keperluan, kategori: (kategori || "pembelajaran") as any,
+      judulKegiatan: judulKegiatan || null,
+      jumlahPeserta: jumlahPeserta || 1, status: "menunggu",
     }).returning();
     const result = await db.query.peminjamanRuanganTable.findFirst({
       where: eq(peminjamanRuanganTable.id, item.id),
       with: { user: true, laboratorium: true },
     });
+
+    // Notif WA ke semua PLP aktif yang punya callmebotKey (non-blocking)
+    const plps = await db.query.usersTable.findMany({
+      where: (u, { eq, and }) => and(eq(u.role, "plp"), eq(u.status, "aktif")),
+    });
+    for (const plp of plps) {
+      if (plp.noWa && plp.callmebotKey) {
+        kirimNotifWa(plp.noWa, plp.callmebotKey, formatPesanPeminjamanRuangan({
+          noPeminjaman, namaPeminjam: result?.user?.nama || "-",
+          laboratorium: result?.laboratorium?.nama || "-",
+          kategori: kategori || "pembelajaran",
+          judulKegiatan: judulKegiatan || null,
+          tanggalMulai,
+        })).catch(() => {});
+      }
+    }
+
     res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -64,7 +84,7 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
   try {
     const item = await db.query.peminjamanRuanganTable.findFirst({
       where: eq(peminjamanRuanganTable.id, Number(req.params.id)),
-      with: { user: { with: { jurusan: true } }, laboratorium: true },
+      with: { user: { with: { jurusan: true } }, laboratorium: { with: { jurusan: true } } },
     });
     if (!item) { res.status(404).json({ message: "Data tidak ditemukan" }); return; }
     res.json(item);
@@ -78,7 +98,7 @@ router.put("/:id/status", requireAuth, requireRole("plp", "admin"), async (req: 
     const { status, catatan } = req.body;
     if (!status) { res.status(400).json({ message: "Status wajib diisi" }); return; }
     const [updated] = await db.update(peminjamanRuanganTable)
-      .set({ status, catatanPlp: catatan || null, verifikasiOleh: req.user!.id, updatedAt: new Date() })
+      .set({ status: status as any, catatanPlp: catatan || null, verifikasiOleh: req.user!.id, updatedAt: new Date() })
       .where(eq(peminjamanRuanganTable.id, Number(req.params.id))).returning();
     if (!updated) { res.status(404).json({ message: "Data tidak ditemukan" }); return; }
     const result = await db.query.peminjamanRuanganTable.findFirst({

@@ -199,6 +199,8 @@ function VerifikasiRuanganTab() {
               <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Pemohon</span><span className="font-bold">{selected.user?.nama}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Ruangan</span><span>{selected.laboratorium?.nama}</span></div>
+                {(selected as any).kategori && <div className="flex justify-between"><span className="text-muted-foreground">Kategori</span><span className="font-semibold">{{pembelajaran:"Pembelajaran/Praktikum",penelitian:"Penelitian",pengabdian_masyarakat:"Pengabdian Masyarakat"}[(selected as any).kategori]}</span></div>}
+                {(selected as any).judulKegiatan && <div className="flex justify-between"><span className="text-muted-foreground">Judul</span><span className="text-right max-w-xs">{(selected as any).judulKegiatan}</span></div>}
                 <div className="flex justify-between"><span className="text-muted-foreground">Keperluan</span><span>{selected.keperluan}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tanggal</span><span>{formatDate(selected.tanggalMulai)} - {formatDate(selected.tanggalSelesai)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Waktu</span><span>{selected.waktuMulai?.slice(0,5)} - {selected.waktuSelesai?.slice(0,5)}</span></div>

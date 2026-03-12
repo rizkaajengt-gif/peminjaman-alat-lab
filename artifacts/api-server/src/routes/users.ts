@@ -80,9 +80,9 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
 
 router.put("/:id", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
   try {
-    const { nama, email, role, nim, nip, noHp, jurusanId, laboratoriumId, status } = req.body;
+    const { nama, email, role, nim, nip, noHp, noWa, callmebotKey, jurusanId, laboratoriumId, status } = req.body;
     const [user] = await db.update(usersTable)
-      .set({ nama, email, role, nim: nim || null, nip: nip || null, noHp: noHp || null, jurusanId: jurusanId || null, laboratoriumId: laboratoriumId || null, status, updatedAt: new Date() })
+      .set({ nama, email, role, nim: nim || null, nip: nip || null, noHp: noHp || null, noWa: noWa || null, callmebotKey: callmebotKey || null, jurusanId: jurusanId || null, laboratoriumId: laboratoriumId || null, status, updatedAt: new Date() })
       .where(eq(usersTable.id, Number(req.params.id)))
       .returning();
     if (!user) { res.status(404).json({ message: "User tidak ditemukan" }); return; }

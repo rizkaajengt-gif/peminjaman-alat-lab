@@ -16,6 +16,8 @@ export const usersTable = pgTable("users", {
   nim: text("nim"),
   nip: text("nip"),
   noHp: text("no_hp"),
+  noWa: text("no_wa"),
+  callmebotKey: text("callmebot_key"),
   jurusanId: integer("jurusan_id").references(() => jurusanTable.id),
   laboratoriumId: integer("laboratorium_id").references(() => laboratoriumTable.id),
   status: userStatusEnum("status").notNull().default("menunggu"),

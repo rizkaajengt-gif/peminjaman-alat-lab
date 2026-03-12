@@ -101,9 +101,9 @@ export default function AdminLaboratorium() {
             <div className="space-y-1.5"><Label>Lokasi</Label><Input value={form.lokasi} onChange={e => setForm({...form, lokasi: e.target.value})} className="rounded-xl h-10" /></div>
             <div className="space-y-1.5"><Label>Kapasitas</Label><Input type="number" value={form.kapasitas} onChange={e => setForm({...form, kapasitas: parseInt(e.target.value)})} className="rounded-xl h-10" /></div>
             <div className="col-span-2 space-y-1.5"><Label>Jurusan</Label>
-              <Select value={form.jurusanId} onValueChange={v => setForm({...form, jurusanId: v})}>
+              <Select value={form.jurusanId || "_lintas_"} onValueChange={v => setForm({...form, jurusanId: v === "_lintas_" ? "" : v})}>
                 <SelectTrigger className="rounded-xl h-10"><SelectValue placeholder="Pilih jurusan (opsional)" /></SelectTrigger>
-                <SelectContent><SelectItem value="">-- Lintas Jurusan --</SelectItem>{jurusanList?.map(j => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="_lintas_">-- Lintas Jurusan --</SelectItem>{jurusanList?.map(j => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="col-span-2 space-y-1.5"><Label>Deskripsi</Label><Textarea value={form.deskripsi} onChange={e => setForm({...form, deskripsi: e.target.value})} className="rounded-xl resize-none" rows={2} /></div>

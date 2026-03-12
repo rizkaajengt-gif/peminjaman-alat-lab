@@ -112,8 +112,9 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="bg-slate-900 text-slate-400 py-12 text-center text-sm">
-        <p>© 2024 Poltekkes Kemenkes Tasikmalaya. Hak Cipta Dilindungi.</p>
+      <footer className="bg-slate-900 text-slate-400 py-10 text-center text-sm">
+        <p className="font-medium text-slate-300">© {new Date().getFullYear()} Poltekkes Kemenkes Tasikmalaya. Hak Cipta Dilindungi.</p>
+        <p className="mt-1.5 text-slate-500 text-xs">Design by <span className="text-teal-400 font-medium">Rizka Ajeng Trikusumah</span></p>
       </footer>
     </div>
   );

@@ -82,7 +82,7 @@ export default function MahasiswaRiwayat() {
               <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
                 <TableHead className="font-semibold">No. Peminjaman</TableHead>
                 <TableHead className="font-semibold">Laboratorium</TableHead>
-                <TableHead className="font-semibold">Keperluan</TableHead>
+                <TableHead className="font-semibold">Kategori & Judul</TableHead>
                 <TableHead className="font-semibold">Tanggal</TableHead>
                 <TableHead className="font-semibold">Waktu</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
@@ -93,8 +93,13 @@ export default function MahasiswaRiwayat() {
                 : peminjamanRuangan?.map(p => (
                   <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
                     <TableCell className="font-mono text-xs font-semibold text-primary">{p.noPeminjaman}</TableCell>
-                    <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
-                    <TableCell className="text-sm max-w-xs truncate">{p.keperluan}</TableCell>
+                    <TableCell className="text-sm">{(p as any).laboratorium?.nama}</TableCell>
+                    <TableCell className="text-sm max-w-xs">
+                      <span className="text-xs font-medium text-blue-600 bg-blue-50 rounded-md px-1.5 py-0.5">
+                        {{pembelajaran:"Pembelajaran",penelitian:"Penelitian",pengabdian_masyarakat:"Pengabdian"}[(p as any).kategori] || (p as any).kategori || "-"}
+                      </span>
+                      {(p as any).judulKegiatan && <div className="text-xs text-muted-foreground truncate mt-0.5">{(p as any).judulKegiatan}</div>}
+                    </TableCell>
                     <TableCell className="text-sm">{formatDate(p.tanggalMulai)}</TableCell>
                     <TableCell className="text-sm">{p.waktuMulai?.slice(0, 5)} - {p.waktuSelesai?.slice(0, 5)}</TableCell>
                     <TableCell><StatusBadge status={p.status} /></TableCell>

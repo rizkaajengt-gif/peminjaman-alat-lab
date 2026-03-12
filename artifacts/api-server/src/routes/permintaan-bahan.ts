@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, permintaanBahanTable, permintaanBahanItemTable, bahanTable, plpLaboratoriumTable } from "@workspace/db";
+import { db, permintaanBahanTable, permintaanBahanItemTable, bahanTable, plpLaboratoriumTable, usersTable } from "@workspace/db";
 import { eq, and, or, SQL } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
+import { kirimNotifWa, formatPesanPermintaanBahan } from "../lib/notifikasi.js";
 
 const router = Router();
 
@@ -81,10 +82,22 @@ router.post("/", requireAuth, async (req: AuthRequest, res) => {
       with: {
         user: true,
         laboratorium: true,
-        plp: { columns: { id: true, nama: true } },
+        plp: { columns: { id: true, nama: true, noWa: true, callmebotKey: true } },
         items: { with: { bahan: true } },
       },
     });
+
+    // Kirim notif WA ke PLP yang dituju (non-blocking)
+    const targetPlp = result?.plp as any;
+    if (tujuan === "plp" && targetPlp?.noWa && targetPlp?.callmebotKey) {
+      kirimNotifWa(targetPlp.noWa, targetPlp.callmebotKey, formatPesanPermintaanBahan({
+        noPermintaan, namaPemohon: result?.user?.nama || "-",
+        keperluan: keperluan || "-",
+        jumlahItem: items?.length || 0,
+        tanggalDibutuhkan: tanggalDibutuhkan || "-",
+      })).catch(() => {});
+    }
+
     res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });

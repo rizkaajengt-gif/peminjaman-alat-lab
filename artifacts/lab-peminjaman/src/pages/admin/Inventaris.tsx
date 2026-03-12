@@ -75,7 +75,7 @@ function AlatTab() {
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row gap-3 justify-between">
           <div className="flex gap-2 flex-1">
             <div className="relative flex-1 max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" /><Input placeholder="Cari alat..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl" /></div>
-            <Select value={filterLab} onValueChange={setFilterLab}><SelectTrigger className="w-44 h-10 rounded-xl"><SelectValue placeholder="Semua Lab" /></SelectTrigger><SelectContent><SelectItem value="">Semua Lab</SelectItem>{labs?.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.nama}</SelectItem>)}</SelectContent></Select>
+            <Select value={filterLab || "_all_"} onValueChange={v => setFilterLab(v === "_all_" ? "" : v)}><SelectTrigger className="w-44 h-10 rounded-xl"><SelectValue placeholder="Semua Lab" /></SelectTrigger><SelectContent><SelectItem value="_all_">Semua Lab</SelectItem>{labs?.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.nama}</SelectItem>)}</SelectContent></Select>
           </div>
           <Button onClick={() => open()} className="h-10 rounded-xl"><Plus className="w-4 h-4 mr-2" />Tambah Alat</Button>
         </div>

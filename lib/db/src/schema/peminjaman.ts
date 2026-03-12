@@ -7,6 +7,7 @@ import { alatTable } from "./alat";
 
 export const statusPeminjamanEnum = pgEnum("status_peminjaman", ["menunggu", "disetujui", "ditolak", "dipinjam", "dikembalikan"]);
 export const statusRuanganEnum = pgEnum("status_ruangan", ["menunggu", "disetujui", "ditolak", "selesai"]);
+export const kategoriRuanganEnum = pgEnum("kategori_ruangan", ["pembelajaran", "penelitian", "pengabdian_masyarakat"]);
 
 export const peminjamanAlatTable = pgTable("peminjaman_alat", {
   id: serial("id").primaryKey(),
@@ -41,6 +42,8 @@ export const peminjamanRuanganTable = pgTable("peminjaman_ruangan", {
   waktuMulai: time("waktu_mulai").notNull(),
   waktuSelesai: time("waktu_selesai").notNull(),
   keperluan: text("keperluan").notNull(),
+  kategori: kategoriRuanganEnum("kategori").notNull().default("pembelajaran"),
+  judulKegiatan: text("judul_kegiatan"),
   jumlahPeserta: integer("jumlah_peserta").notNull().default(1),
   status: statusRuanganEnum("status").notNull().default("menunggu"),
   catatanPlp: text("catatan_plp"),

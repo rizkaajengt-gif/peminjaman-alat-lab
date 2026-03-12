@@ -40,13 +40,13 @@ export default function AdminUsers() {
   const deleteMutation = useDeleteUser();
   const verifyMutation = useVerifyUser();
 
-  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", jurusanId: "", status: "aktif" });
+  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", jurusanId: "", status: "aktif" });
 
-  const openCreate = () => { setEditUser(null); setForm({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", jurusanId: "", status: "aktif" }); setShowDialog(true); };
-  const openEdit = (u: any) => { setEditUser(u); setForm({ nama: u.nama, email: u.email, password: "", role: u.role, nim: u.nim || "", nip: u.nip || "", noHp: u.noHp || "", jurusanId: u.jurusanId?.toString() || "", status: u.status }); setShowDialog(true); };
+  const openCreate = () => { setEditUser(null); setForm({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", jurusanId: "", status: "aktif" }); setShowDialog(true); };
+  const openEdit = (u: any) => { setEditUser(u); setForm({ nama: u.nama, email: u.email, password: "", role: u.role, nim: u.nim || "", nip: u.nip || "", noHp: u.noHp || "", noWa: u.noWa || "", callmebotKey: u.callmebotKey || "", jurusanId: u.jurusanId?.toString() || "", status: u.status }); setShowDialog(true); };
 
   const handleSave = () => {
-    const payload: any = { nama: form.nama, email: form.email, role: form.role as any, nim: form.nim || null, nip: form.nip || null, noHp: form.noHp || null, jurusanId: form.jurusanId ? parseInt(form.jurusanId) : null, status: form.status as any };
+    const payload: any = { nama: form.nama, email: form.email, role: form.role as any, nim: form.nim || null, nip: form.nip || null, noHp: form.noHp || null, noWa: form.noWa || null, callmebotKey: form.callmebotKey || null, jurusanId: form.jurusanId ? parseInt(form.jurusanId) : null, status: form.status as any };
     if (!editUser) payload.password = form.password;
     const mutation = editUser
       ? updateMutation.mutateAsync({ id: editUser.id, data: payload })
@@ -84,12 +84,12 @@ export default function AdminUsers() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input placeholder="Cari nama / email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl" />
             </div>
-            <Select value={filterRole} onValueChange={setFilterRole}>
+            <Select value={filterRole || "_all_"} onValueChange={v => setFilterRole(v === "_all_" ? "" : v)}>
               <SelectTrigger className="w-36 h-10 rounded-xl">
                 <SelectValue placeholder="Semua Peran" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Semua Peran</SelectItem>
+                <SelectItem value="_all_">Semua Peran</SelectItem>
                 {ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -198,14 +198,35 @@ export default function AdminUsers() {
             </div>
             <div className="col-span-2 space-y-1.5">
               <Label>Jurusan</Label>
-              <Select value={form.jurusanId} onValueChange={v => setForm({...form, jurusanId: v})}>
+              <Select value={form.jurusanId || "_none_"} onValueChange={v => setForm({...form, jurusanId: v === "_none_" ? "" : v})}>
                 <SelectTrigger className="rounded-xl h-10"><SelectValue placeholder="Pilih Jurusan (opsional)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-- Tidak Ada --</SelectItem>
+                  <SelectItem value="_none_">-- Tidak Ada --</SelectItem>
                   {jurusanList?.map(j => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+            {form.role === "plp" && (
+              <>
+                <div className="col-span-2 border-t pt-3">
+                  <p className="text-xs font-semibold text-purple-700 mb-3 flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-purple-400" />
+                    Konfigurasi Notifikasi WhatsApp (Callmebot)
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>No. WhatsApp (format: 628xxx)</Label>
+                  <Input value={form.noWa} onChange={e => setForm({...form, noWa: e.target.value})} className="rounded-xl h-10" placeholder="628123456789" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>API Key Callmebot</Label>
+                  <Input value={form.callmebotKey} onChange={e => setForm({...form, callmebotKey: e.target.value})} className="rounded-xl h-10" placeholder="Key dari Callmebot" />
+                </div>
+                <div className="col-span-2 text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-xl p-3 leading-relaxed">
+                  <strong>Cara aktivasi Callmebot:</strong> Simpan nomor <strong>+34 644 44 53 84</strong> di WA → Kirim pesan <em>"I allow callmebot to send me messages"</em> → Balas bot berisi API key → Masukkan key di sini.
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)} className="rounded-xl">Batal</Button>
