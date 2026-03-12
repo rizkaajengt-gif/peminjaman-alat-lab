@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useGetBahan, useUpdateBahan, useGetPermintaanBahan, useUpdatePermintaanBahanStatus, customFetch } from "@workspace/api-client-react";
+import { useState, useMemo } from "react";
+import { useGetBahan, useUpdateBahan, useGetPermintaanBahan, useUpdatePermintaanBahanStatus, useGetLaboratorium, customFetch } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
-import { StatusBadge } from "@/components/ui-custom/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertTriangle, CheckCircle2, XCircle, Package, Edit3, Pencil, Printer, ArrowRightLeft, Building2 } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2, XCircle, Package, Edit3, Pencil, Printer, ArrowRightLeft, Search, GraduationCap, FlaskConical, X } from "lucide-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -71,6 +71,53 @@ function StokTab({ bahan, isLoading }: { bahan: any[] | undefined; isLoading: bo
   const [editItem, setEditItem] = useState<any>(null);
   const [stokGudangBaru, setStokGudangBaru] = useState("");
   const [stokPlpBaru, setStokPlpBaru] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterJurusan, setFilterJurusan] = useState("");
+  const [filterLab, setFilterLab] = useState("");
+  const [filterStok, setFilterStok] = useState("");
+  const { data: labs } = useGetLaboratorium({});
+  const { data: jurusanList } = useQuery<any[]>({ queryKey: ["/api/jurusan"], queryFn: () => customFetch("/api/jurusan") });
+
+  const jurusanMap = useMemo(() => {
+    const m: Record<number, string> = {};
+    (labs || []).forEach((l: any) => { if (l.jurusan) m[l.id] = l.jurusan.nama; });
+    return m;
+  }, [labs]);
+  const jurusanIdMap = useMemo(() => {
+    const m: Record<number, number> = {};
+    (labs || []).forEach((l: any) => { if (l.jurusan) m[l.id] = l.jurusan.id; });
+    return m;
+  }, [labs]);
+
+  const filteredLabs = useMemo(() => (labs || []).filter((l: any) => !filterJurusan || l.jurusan?.id?.toString() === filterJurusan), [labs, filterJurusan]);
+
+  const filtered = useMemo(() => (bahan || []).filter(b => {
+    if (search && !b.nama.toLowerCase().includes(search.toLowerCase()) && !b.kode.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterLab && String(b.laboratoriumId) !== filterLab) return false;
+    if (filterJurusan && String(jurusanIdMap[b.laboratoriumId]) !== filterJurusan) return false;
+    const isGudangLow = ((b as any).stokGudang ?? 0) <= b.stokMinimal;
+    const isPlpLow = b.stok <= b.stokMinimal;
+    if (filterStok === "rendah" && !isGudangLow && !isPlpLow) return false;
+    if (filterStok === "gudang_rendah" && !isGudangLow) return false;
+    if (filterStok === "plp_rendah" && !isPlpLow) return false;
+    if (filterStok === "normal" && (isGudangLow || isPlpLow)) return false;
+    return true;
+  }), [bahan, search, filterLab, filterJurusan, filterStok, jurusanIdMap]);
+
+  // Summary by jurusan
+  const jurusanSummary = useMemo(() => {
+    const m: Record<string, { nama: string; totalGudang: number; totalPlp: number; rendah: number }> = {};
+    (bahan || []).forEach(b => {
+      const jNama = jurusanMap[b.laboratoriumId] || "Lainnya";
+      if (!m[jNama]) m[jNama] = { nama: jNama, totalGudang: 0, totalPlp: 0, rendah: 0 };
+      m[jNama].totalGudang += (b as any).stokGudang ?? 0;
+      m[jNama].totalPlp += b.stok;
+      if (b.stok <= b.stokMinimal || ((b as any).stokGudang ?? 0) <= b.stokMinimal) m[jNama].rendah++;
+    });
+    return Object.values(m).sort((a, b) => a.nama.localeCompare(b.nama));
+  }, [bahan, jurusanMap]);
+
+  const activeFilterCount = [filterJurusan, filterLab, filterStok, search].filter(Boolean).length;
 
   const handleUpdateStok = () => {
     if (!editItem) return;
@@ -90,20 +137,106 @@ function StokTab({ bahan, isLoading }: { bahan: any[] | undefined; isLoading: bo
 
   return (
     <>
+      {/* Summary per Jurusan */}
+      {jurusanSummary.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+          {jurusanSummary.map(j => (
+            <Card key={j.nama}
+              className={`p-3 rounded-xl border-none shadow-sm cursor-pointer transition-all hover:shadow-md ${filterJurusan && (jurusanList || []).find((jj: any) => jj.id.toString() === filterJurusan)?.nama === j.nama ? "ring-2 ring-primary bg-primary/5" : j.rendah > 0 ? "bg-amber-50" : "bg-slate-50"}`}
+              onClick={() => {
+                const jObj = (jurusanList || []).find((jj: any) => jj.nama === j.nama);
+                if (jObj) {
+                  setFilterJurusan(filterJurusan === jObj.id.toString() ? "" : jObj.id.toString());
+                  setFilterLab("");
+                }
+              }}>
+              <div className="flex items-start justify-between gap-1">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground font-medium truncate">{j.nama}</p>
+                  <div className="flex gap-3 mt-1">
+                    <div>
+                      <p className="font-bold text-base text-blue-700 leading-tight">{j.totalGudang}</p>
+                      <p className="text-xs text-muted-foreground">gudang</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-base text-teal-700 leading-tight">{j.totalPlp}</p>
+                      <p className="text-xs text-muted-foreground">PLP</p>
+                    </div>
+                  </div>
+                </div>
+                {j.rendah > 0 && (
+                  <div className="shrink-0 flex items-center gap-1 text-xs text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-lg">
+                    <AlertTriangle className="w-3 h-3" />{j.rendah}
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
       <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-          <Package className="text-primary w-5 h-5" />
-          <h3 className="font-semibold">Stok Bahan Habis Pakai</h3>
-          <div className="ml-auto flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-500 inline-block"></span>Stok Gudang (Pusat)</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-teal-500 inline-block"></span>Stok PLP (di Lab)</span>
+        {/* Filter bar */}
+        <div className="p-4 border-b border-slate-100 space-y-3">
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative min-w-[160px] flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input placeholder="Cari nama/kode bahan..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10 rounded-xl" />
+            </div>
+            <Select value={filterJurusan || "_all_"} onValueChange={v => { setFilterJurusan(v === "_all_" ? "" : v); setFilterLab(""); }}>
+              <SelectTrigger className={`w-44 h-10 rounded-xl ${filterJurusan ? "border-primary bg-primary/5 text-primary font-medium" : ""}`}>
+                <GraduationCap className="w-3.5 h-3.5 mr-1 shrink-0" />
+                <SelectValue placeholder="Semua Jurusan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all_">Semua Jurusan</SelectItem>
+                {(jurusanList || []).map((j: any) => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterLab || "_all_"} onValueChange={v => setFilterLab(v === "_all_" ? "" : v)}>
+              <SelectTrigger className={`w-44 h-10 rounded-xl ${filterLab ? "border-primary bg-primary/5 text-primary font-medium" : ""}`}>
+                <FlaskConical className="w-3.5 h-3.5 mr-1 shrink-0" />
+                <SelectValue placeholder="Semua Lab" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all_">Semua Lab</SelectItem>
+                {filteredLabs.map((l: any) => <SelectItem key={l.id} value={l.id.toString()}>{l.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterStok || "_all_"} onValueChange={v => setFilterStok(v === "_all_" ? "" : v)}>
+              <SelectTrigger className={`w-44 h-10 rounded-xl ${filterStok ? "border-amber-500 bg-amber-50 text-amber-700 font-medium" : ""}`}>
+                <SelectValue placeholder="Semua Status Stok" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all_">Semua Status Stok</SelectItem>
+                <SelectItem value="rendah">Semua Stok Rendah</SelectItem>
+                <SelectItem value="gudang_rendah">Gudang Rendah</SelectItem>
+                <SelectItem value="plp_rendah">PLP Rendah</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+              </SelectContent>
+            </Select>
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" className="h-10 rounded-xl gap-1.5 text-muted-foreground hover:text-destructive"
+                onClick={() => { setSearch(""); setFilterJurusan(""); setFilterLab(""); setFilterStok(""); }}>
+                <X className="w-3.5 h-3.5" />Reset ({activeFilterCount})
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 inline-block"></span>Stok Gudang (Pusat)</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-teal-500 inline-block"></span>Stok PLP (di Lab)</span>
+            </div>
+            <span className="ml-auto">Menampilkan <strong className="text-foreground">{filtered.length}</strong> dari {bahan?.length || 0} bahan</span>
           </div>
         </div>
+
         <Table>
           <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
             <TableHead className="font-semibold">Kode</TableHead>
             <TableHead className="font-semibold">Nama Bahan</TableHead>
-            <TableHead className="font-semibold">Lab / PLP</TableHead>
+            <TableHead className="font-semibold">Jurusan</TableHead>
+            <TableHead className="font-semibold">Lab</TableHead>
             <TableHead className="font-semibold text-center text-blue-700">Stok Gudang</TableHead>
             <TableHead className="font-semibold text-center text-teal-700">Stok PLP</TableHead>
             <TableHead className="font-semibold text-center">Min. Stok</TableHead>
@@ -111,9 +244,9 @@ function StokTab({ bahan, isLoading }: { bahan: any[] | undefined; isLoading: bo
             <TableHead className="text-right font-semibold">Aksi</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
-            : bahan?.length === 0 ? <TableRow><TableCell colSpan={8} className="h-32 text-center text-muted-foreground">Belum ada data bahan</TableCell></TableRow>
-            : bahan?.map(b => {
+            {isLoading ? <TableRow><TableCell colSpan={9} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+            : filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="h-32 text-center text-muted-foreground">Tidak ada data yang sesuai filter</TableCell></TableRow>
+            : filtered.map(b => {
               const stokGudang = (b as any).stokGudang ?? 0;
               const stokPlp = b.stok;
               const isGudangLow = stokGudang <= b.stokMinimal;
@@ -125,6 +258,7 @@ function StokTab({ bahan, isLoading }: { bahan: any[] | undefined; isLoading: bo
                     <div className="font-semibold">{b.nama}</div>
                     <div className="text-xs text-muted-foreground">{b.satuan}</div>
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{jurusanMap[b.laboratoriumId] || "—"}</TableCell>
                   <TableCell className="text-sm">{b.laboratorium?.nama}</TableCell>
                   <TableCell className="text-center">
                     <span className={`font-bold text-lg ${isGudangLow ? "text-red-600" : "text-blue-600"}`}>{stokGudang}</span>
