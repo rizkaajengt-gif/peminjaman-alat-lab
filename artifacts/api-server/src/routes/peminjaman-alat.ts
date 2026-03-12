@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, peminjamanAlatTable, peminjamanAlatItemTable, alatTable } from "@workspace/db";
-import { eq, and, SQL, gte, lte } from "drizzle-orm";
+import { eq, and, SQL, inArray } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
@@ -97,9 +97,6 @@ router.put("/:id/status", requireAuth, requireRole("plp", "admin"), async (req: 
 
     if (status === "disetujui" || status === "dipinjam") {
       for (const item of peminjaman.items) {
-        await db.update(alatTable)
-          .set({ stokTersedia: db.query ? undefined : undefined })
-          .where(eq(alatTable.id, item.alatId));
         const alat = await db.query.alatTable.findFirst({ where: eq(alatTable.id, item.alatId) });
         if (alat) {
           await db.update(alatTable).set({ stokTersedia: Math.max(0, alat.stokTersedia - item.jumlah) }).where(eq(alatTable.id, item.alatId));
@@ -122,6 +119,35 @@ router.put("/:id/status", requireAuth, requireRole("plp", "admin"), async (req: 
 
     const result = await db.query.peminjamanAlatTable.findFirst({
       where: eq(peminjamanAlatTable.id, updated.id),
+      with: { user: true, laboratorium: true, items: { with: { alat: true } } },
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.put("/:id/items", requireAuth, requireRole("plp", "admin"), async (req: AuthRequest, res) => {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) { res.status(400).json({ message: "Data items tidak valid" }); return; }
+
+    const peminjaman = await db.query.peminjamanAlatTable.findFirst({
+      where: eq(peminjamanAlatTable.id, Number(req.params.id)),
+    });
+    if (!peminjaman) { res.status(404).json({ message: "Data tidak ditemukan" }); return; }
+    if (peminjaman.status !== "menunggu") { res.status(400).json({ message: "Hanya bisa diubah saat status menunggu" }); return; }
+
+    for (const item of items) {
+      if (item.id && item.jumlah > 0) {
+        await db.update(peminjamanAlatItemTable)
+          .set({ jumlah: item.jumlah })
+          .where(and(eq(peminjamanAlatItemTable.id, item.id), eq(peminjamanAlatItemTable.peminjamanId, Number(req.params.id))));
+      }
+    }
+
+    const result = await db.query.peminjamanAlatTable.findFirst({
+      where: eq(peminjamanAlatTable.id, Number(req.params.id)),
       with: { user: true, laboratorium: true, items: { with: { alat: true } } },
     });
     res.json(result);

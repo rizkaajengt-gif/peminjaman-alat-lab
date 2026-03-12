@@ -80,6 +80,25 @@ router.post("/", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+router.get("/jadwal", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { laboratoriumId } = req.query;
+    const conditions: SQL[] = [
+      eq(peminjamanRuanganTable.status, "disetujui" as any),
+    ];
+    if (laboratoriumId) conditions.push(eq(peminjamanRuanganTable.laboratoriumId, Number(laboratoriumId)));
+
+    const data = await db.query.peminjamanRuanganTable.findMany({
+      where: and(...conditions),
+      with: { user: { with: { jurusan: true } }, laboratorium: true },
+      orderBy: (t, { asc }) => [asc(t.tanggalMulai)],
+    });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
   try {
     const item = await db.query.peminjamanRuanganTable.findFirst({

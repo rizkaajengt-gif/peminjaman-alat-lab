@@ -66,6 +66,7 @@ const NAV_ITEMS: NavItem[] = [
   // Mahasiswa/Dosen group
   { title: "Pinjam Alat", href: "/mahasiswa/peminjaman", icon: ClipboardList, roles: ["mahasiswa", "dosen"], group: "Layanan" },
   { title: "Pinjam Ruangan", href: "/mahasiswa/ruangan", icon: CalendarCheck, roles: ["mahasiswa", "dosen"], group: "Layanan" },
+  { title: "Jadwal Ruangan", href: "/jadwal-ruangan", icon: CalendarDays, roles: ["mahasiswa", "dosen", "plp", "admin"], group: "Layanan" },
   { title: "Minta Bahan", href: "/mahasiswa/permintaan", icon: FlaskConical, roles: ["mahasiswa", "plp", "dosen"], group: "Layanan" },
   { title: "Riwayat Saya", href: "/mahasiswa/riwayat", icon: FileBox, roles: ["mahasiswa", "dosen"], group: "Layanan" },
 

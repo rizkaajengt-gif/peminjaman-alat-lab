@@ -1,18 +1,19 @@
 import { useState } from "react";
-import { useGetPeminjamanAlat, useUpdatePeminjamanAlatStatus, useGetPeminjamanRuangan, useUpdatePeminjamanRuanganStatus, useGetUsers, useVerifyUser } from "@workspace/api-client-react";
+import { useGetPeminjamanAlat, useUpdatePeminjamanAlatStatus, useGetPeminjamanRuangan, useUpdatePeminjamanRuanganStatus, useGetUsers, useVerifyUser, customFetch } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { StatusBadge } from "@/components/ui-custom/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, XCircle, ClipboardList, CalendarDays, Users } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Loader2, CheckCircle2, XCircle, ClipboardList, CalendarDays, Users, Pencil } from "lucide-react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -68,15 +69,45 @@ function VerifikasiAlatTab() {
   const qc = useQueryClient();
   const [selected, setSelected] = useState<any>(null);
   const [catatan, setCatatan] = useState("");
+  const [editedItems, setEditedItems] = useState<Record<number, number>>({});
+  const [editMode, setEditMode] = useState(false);
   const { data, isLoading } = useGetPeminjamanAlat({ status: "menunggu" as any });
   const updateStatus = useUpdatePeminjamanAlatStatus();
+
+  const updateItemsMutation = useMutation({
+    mutationFn: (vars: { id: number; items: { id: number; jumlah: number }[] }) =>
+      customFetch(`/api/peminjaman-alat/${vars.id}/items`, { method: "PUT", body: JSON.stringify({ items: vars.items }), headers: { "Content-Type": "application/json" } }),
+    onSuccess: (data: any) => {
+      setSelected(data);
+      setEditMode(false);
+      toast({ title: "Jumlah berhasil diperbarui" });
+      qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] });
+    },
+    onError: () => toast({ variant: "destructive", description: "Gagal memperbarui jumlah" }),
+  });
 
   const handleAction = (status: string) => {
     if (!selected) return;
     updateStatus.mutate({ id: selected.id, data: { status, catatan } }, {
-      onSuccess: () => { toast({ title: status === "disetujui" ? "Disetujui" : "Ditolak" }); setSelected(null); setCatatan(""); qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] }); },
+      onSuccess: () => { toast({ title: status === "disetujui" ? "Disetujui" : "Ditolak" }); setSelected(null); setCatatan(""); setEditedItems({}); setEditMode(false); qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] }); },
       onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message }),
     });
+  };
+
+  const handleSaveItems = () => {
+    if (!selected) return;
+    const items = selected.items?.map((item: any) => ({
+      id: item.id,
+      jumlah: editedItems[item.id] ?? item.jumlah,
+    })) || [];
+    updateItemsMutation.mutate({ id: selected.id, items });
+  };
+
+  const openDialog = (p: any) => {
+    setSelected(p);
+    setCatatan("");
+    setEditMode(false);
+    setEditedItems({});
   };
 
   return (
@@ -104,13 +135,13 @@ function VerifikasiAlatTab() {
                 <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</TableCell>
                 <TableCell className="text-sm">{formatDate(p.tanggalPinjam)}</TableCell>
-                <TableCell className="text-right"><Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => { setSelected(p); setCatatan(""); }}>Proses</Button></TableCell>
+                <TableCell className="text-right"><Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => openDialog(p)}>Proses</Button></TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
-      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) { setSelected(null); setEditMode(false); setEditedItems({}); } }}>
         <DialogContent className="rounded-2xl max-w-lg">
           <DialogHeader><DialogTitle>Verifikasi Peminjaman Alat</DialogTitle></DialogHeader>
           {selected && (
@@ -122,12 +153,39 @@ function VerifikasiAlatTab() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Pinjam</span><span>{formatDate(selected.tanggalPinjam)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Kembali</span><span>{formatDate(selected.tanggalKembali)}</span></div>
               </div>
-              <div className="space-y-1 text-sm font-semibold">Daftar Alat:</div>
-              {selected.items?.map((item: any, i: number) => (
-                <div key={i} className="flex justify-between bg-white border border-slate-200 rounded-xl p-3 text-sm">
-                  <span>{item.alat?.nama}</span><span className="text-muted-foreground">{item.jumlah} {item.alat?.satuan}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Daftar Alat:</span>
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1" onClick={() => { setEditMode(!editMode); setEditedItems({}); }}>
+                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan Edit" : "Edit Jumlah"}
+                </Button>
+              </div>
+              {selected.items?.map((item: any) => (
+                <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
+                  <div>
+                    <div className="font-medium">{item.alat?.nama}</div>
+                    <div className="text-xs text-muted-foreground">Diminta: {item.jumlah} {item.alat?.satuan}</div>
+                  </div>
+                  {editMode ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        className="w-20 h-8 rounded-lg text-center text-sm"
+                        value={editedItems[item.id] ?? item.jumlah}
+                        onChange={e => setEditedItems(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
+                      />
+                      <span className="text-xs text-muted-foreground">{item.alat?.satuan}</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground font-semibold">{item.jumlah} {item.alat?.satuan}</span>
+                  )}
                 </div>
               ))}
+              {editMode && (
+                <Button onClick={handleSaveItems} disabled={updateItemsMutation.isPending} className="w-full rounded-xl gap-2">
+                  {updateItemsMutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : "Simpan Perubahan Jumlah"}
+                </Button>
+              )}
               <div className="space-y-1.5">
                 <Label>Catatan</Label>
                 <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional..." className="rounded-xl resize-none" rows={2} />
@@ -136,8 +194,8 @@ function VerifikasiAlatTab() {
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">Batal</Button>
-            <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatus.isPending} className="rounded-xl gap-2"><XCircle className="w-4 h-4" />Tolak</Button>
-            <Button onClick={() => handleAction("disetujui")} disabled={updateStatus.isPending} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
+            <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatus.isPending || editMode} className="rounded-xl gap-2"><XCircle className="w-4 h-4" />Tolak</Button>
+            <Button onClick={() => handleAction("disetujui")} disabled={updateStatus.isPending || editMode} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
               {updateStatus.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Setujui</>}
             </Button>
           </DialogFooter>
