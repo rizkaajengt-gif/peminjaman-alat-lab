@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, MoreHorizontal, CheckCircle2, XCircle, Pencil, Trash2, UserCog, Upload, Download, KeyRound, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Plus, Search, MoreHorizontal, CheckCircle2, XCircle, Pencil, Trash2, UserCog, Upload, Download, KeyRound, AlertTriangle, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 10;
@@ -49,6 +49,13 @@ export default function AdminUsers() {
   const [confirmPass, setConfirmPass] = useState("");
   const [savingPass, setSavingPass] = useState(false);
 
+  const [showNonaktifDialog, setShowNonaktifDialog] = useState(false);
+  const [nonaktifAngkatan, setNonaktifAngkatan] = useState("");
+  const [nonaktifJurusanId, setNonaktifJurusanId] = useState("");
+  const [nonaktifRole, setNonaktifRole] = useState("mahasiswa");
+  const [nonaktifLoading, setNonaktifLoading] = useState(false);
+  const [nonaktifResult, setNonaktifResult] = useState<string | null>(null);
+
   const { data: users, isLoading } = useGetUsers({ search, role: filterRole as any || undefined });
   const totalPages = Math.max(1, Math.ceil((users?.length || 0) / PAGE_SIZE));
   const pagedUsers = users?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -58,14 +65,14 @@ export default function AdminUsers() {
   const deleteMutation = useDeleteUser();
   const verifyMutation = useVerifyUser();
 
-  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", jurusanId: "", status: "aktif" });
+  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", angkatan: "", jurusanId: "", status: "aktif" });
 
-  const openCreate = () => { setEditUser(null); setForm({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", jurusanId: "", status: "aktif" }); setShowDialog(true); };
-  const openEdit = (u: any) => { setEditUser(u); setForm({ nama: u.nama, email: u.email, password: "", role: u.role, nim: u.nim || "", nip: u.nip || "", noHp: u.noHp || "", noWa: u.noWa || "", callmebotKey: u.callmebotKey || "", jurusanId: u.jurusanId?.toString() || "", status: u.status }); setShowDialog(true); };
+  const openCreate = () => { setEditUser(null); setForm({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", angkatan: "", jurusanId: "", status: "aktif" }); setShowDialog(true); };
+  const openEdit = (u: any) => { setEditUser(u); setForm({ nama: u.nama, email: u.email, password: "", role: u.role, nim: u.nim || "", nip: u.nip || "", noHp: u.noHp || "", noWa: u.noWa || "", callmebotKey: u.callmebotKey || "", angkatan: u.angkatan || "", jurusanId: u.jurusanId?.toString() || "", status: u.status }); setShowDialog(true); };
   const openChangePass = (u: any) => { setPassUserId(u.id); setPassUserName(u.nama); setNewPass(""); setConfirmPass(""); setShowPassDialog(true); };
 
   const handleSave = () => {
-    const payload: any = { nama: form.nama, email: form.email, role: form.role as any, nim: form.nim || null, nip: form.nip || null, noHp: form.noHp || null, noWa: form.noWa || null, callmebotKey: form.callmebotKey || null, jurusanId: form.jurusanId ? parseInt(form.jurusanId) : null, status: form.status as any };
+    const payload: any = { nama: form.nama, email: form.email, role: form.role as any, nim: form.nim || null, nip: form.nip || null, noHp: form.noHp || null, noWa: form.noWa || null, callmebotKey: form.callmebotKey || null, angkatan: form.angkatan || null, jurusanId: form.jurusanId ? parseInt(form.jurusanId) : null, status: form.status as any };
     if (!editUser) payload.password = form.password;
     const mutation = editUser
       ? updateMutation.mutateAsync({ id: editUser.id, data: payload })
@@ -137,6 +144,30 @@ export default function AdminUsers() {
 
   const downloadTemplate = () => window.open("/api/import/users/template", "_blank");
 
+  const handleBulkNonaktif = async () => {
+    if (!nonaktifAngkatan && !nonaktifJurusanId && !nonaktifRole) {
+      toast({ variant: "destructive", title: "Isi minimal satu kriteria" }); return;
+    }
+    setNonaktifLoading(true);
+    setNonaktifResult(null);
+    try {
+      const body: any = {};
+      if (nonaktifAngkatan) body.angkatan = nonaktifAngkatan;
+      if (nonaktifJurusanId) body.jurusanId = parseInt(nonaktifJurusanId);
+      if (nonaktifRole) body.role = nonaktifRole;
+      const res = await fetch("/api/users/bulk-nonaktif", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setNonaktifResult(`${data.count} akun berhasil dinonaktifkan`);
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: data.message });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Gagal", description: e.message });
+    } finally {
+      setNonaktifLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader title="Manajemen Pengguna" description="Kelola semua akun pengguna sistem SIPELAB." />
@@ -156,7 +187,10 @@ export default function AdminUsers() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => { setNonaktifAngkatan(""); setNonaktifJurusanId(""); setNonaktifRole("mahasiswa"); setNonaktifResult(null); setShowNonaktifDialog(true); }} className="h-10 rounded-xl gap-2 text-sm text-orange-600 border-orange-200 hover:bg-orange-50">
+              <GraduationCap className="w-4 h-4" />Nonaktifkan Massal
+            </Button>
             <Button variant="outline" onClick={() => { setImportCsv(""); setImportResult(null); setShowImport(true); }} className="h-10 rounded-xl gap-2 text-sm">
               <Upload className="w-4 h-4" />Import CSV
             </Button>
@@ -173,6 +207,7 @@ export default function AdminUsers() {
                 <TableHead className="font-semibold">Nama</TableHead>
                 <TableHead className="font-semibold">Peran</TableHead>
                 <TableHead className="font-semibold">NIM / NIP</TableHead>
+                <TableHead className="font-semibold">Angkatan</TableHead>
                 <TableHead className="font-semibold">Jurusan</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="text-right font-semibold">Aksi</TableHead>
@@ -180,9 +215,9 @@ export default function AdminUsers() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></TableCell></TableRow>
               ) : users?.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Tidak ada data</TableCell></TableRow>
               ) : pagedUsers?.map(u => (
                 <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-50">
                   <TableCell>
@@ -193,6 +228,7 @@ export default function AdminUsers() {
                     <Badge variant="outline" className={`text-xs font-semibold ${ROLE_COLORS[u.role]}`}>{ROLE_LABELS[u.role]}</Badge>
                   </TableCell>
                   <TableCell className="text-sm font-mono text-slate-600">{u.nim || u.nip || "-"}</TableCell>
+                  <TableCell className="text-sm text-slate-600">{(u as any).angkatan || "-"}</TableCell>
                   <TableCell className="text-sm">{(u as any).jurusan?.nama || "-"}</TableCell>
                   <TableCell><StatusBadge status={u.status} /></TableCell>
                   <TableCell className="text-right">
@@ -290,6 +326,10 @@ export default function AdminUsers() {
               <Label>NIP (jika Staf)</Label>
               <Input value={form.nip} onChange={e => setForm({...form, nip: e.target.value})} className="rounded-xl h-10" />
             </div>
+            <div className="space-y-1.5">
+              <Label>Angkatan (Tahun Masuk)</Label>
+              <Input value={form.angkatan} onChange={e => setForm({...form, angkatan: e.target.value})} className="rounded-xl h-10" placeholder="2021" maxLength={4} />
+            </div>
             <div className="col-span-2 space-y-1.5">
               <Label>Jurusan</Label>
               <Select value={form.jurusanId || "_none_"} onValueChange={v => setForm({...form, jurusanId: v === "_none_" ? "" : v})}>
@@ -355,6 +395,57 @@ export default function AdminUsers() {
             <Button variant="outline" onClick={() => setShowPassDialog(false)} className="rounded-xl">Batal</Button>
             <Button onClick={handleChangePass} disabled={savingPass} className="rounded-xl">
               {savingPass ? <Loader2 className="animate-spin w-4 h-4" /> : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog Nonaktifkan Massal ── */}
+      <Dialog open={showNonaktifDialog} onOpenChange={setShowNonaktifDialog}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-orange-600" />Nonaktifkan Akun Massal</DialogTitle>
+            <DialogDescription>Nonaktifkan semua akun aktif yang memenuhi kriteria di bawah (misal: mahasiswa angkatan 2021 yang sudah lulus).</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Angkatan (Tahun Masuk)</Label>
+              <Input value={nonaktifAngkatan} onChange={e => setNonaktifAngkatan(e.target.value)} className="rounded-xl h-10" placeholder="Contoh: 2021" maxLength={4} />
+              <p className="text-xs text-muted-foreground">Kosongkan jika tidak ingin filter berdasarkan angkatan</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Peran</Label>
+              <Select value={nonaktifRole || "_all_"} onValueChange={v => setNonaktifRole(v === "_all_" ? "" : v)}>
+                <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all_">Semua Peran</SelectItem>
+                  {ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Jurusan (opsional)</Label>
+              <Select value={nonaktifJurusanId || "_all_"} onValueChange={v => setNonaktifJurusanId(v === "_all_" ? "" : v)}>
+                <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Semua Jurusan" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all_">Semua Jurusan</SelectItem>
+                  {jurusanList?.map(j => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>Tindakan ini akan mengubah status semua akun aktif yang sesuai kriteria menjadi <strong>Nonaktif</strong>. Akun yang sudah nonaktif tidak terpengaruh. Akun bisa diaktifkan kembali secara manual jika diperlukan.</span>
+            </div>
+            {nonaktifResult && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700 font-semibold">{nonaktifResult}</div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNonaktifDialog(false)} className="rounded-xl">Tutup</Button>
+            <Button onClick={handleBulkNonaktif} disabled={nonaktifLoading} className="rounded-xl gap-2 bg-orange-600 hover:bg-orange-700 text-white">
+              {nonaktifLoading ? <Loader2 className="animate-spin w-4 h-4" /> : <GraduationCap className="w-4 h-4" />}
+              Nonaktifkan Sekarang
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -119,6 +119,27 @@ router.put("/:id/password", requireAuth, requireRole("admin"), async (req: AuthR
   }
 });
 
+router.post("/bulk-nonaktif", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+  try {
+    const { angkatan, jurusanId, role: filterRole } = req.body;
+    if (!angkatan && !jurusanId && !filterRole) {
+      res.status(400).json({ message: "Minimal satu kriteria (angkatan / jurusan / role) harus diisi" }); return;
+    }
+    const conditions: any[] = [];
+    if (angkatan) conditions.push(eq(usersTable.angkatan, angkatan));
+    if (jurusanId) conditions.push(eq(usersTable.jurusanId, Number(jurusanId)));
+    if (filterRole) conditions.push(eq(usersTable.role, filterRole as any));
+    conditions.push(eq(usersTable.status, "aktif"));
+    const updated = await db.update(usersTable)
+      .set({ status: "nonaktif", updatedAt: new Date() })
+      .where(and(...conditions))
+      .returning({ id: usersTable.id });
+    res.json({ message: `${updated.length} akun berhasil dinonaktifkan`, count: updated.length });
+  } catch (e: any) {
+    res.status(500).json({ message: "Server error: " + e.message });
+  }
+});
+
 router.put("/:id/verify", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
   try {
     const { status, catatan } = req.body;

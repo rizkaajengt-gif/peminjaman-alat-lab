@@ -49,13 +49,16 @@ function parseCsv(csv: string): { headers: string[]; rows: Record<string, string
 router.get("/users/template", requireAuth, requireRole("admin"), async (_req, res) => {
   const jurusanList = await db.query.jurusanTable.findMany({ columns: { id: true, nama: true } });
   let info = "# TEMPLATE IMPORT PENGGUNA SIPELAB\n";
-  info += "# Kolom wajib: nama, email, password, role\n";
+  info += "# Kolom wajib: nama, email, role\n";
+  info += "# password: jika dikosongkan, akan menggunakan NIM (mahasiswa) atau NIP (staf)\n";
   info += "# role: admin | mahasiswa | plp | gudang | dosen\n";
+  info += "# angkatan: tahun masuk (misal: 2021) – digunakan untuk nonaktifkan massal saat lulus\n";
   info += "# Jurusan (isi ID):\n";
   info += jurusanList.map(j => `# ${j.id} = ${j.nama}`).join("\n");
-  info += "\nnama,email,password,role,nim,nip,noHp,jurusanId\n";
-  info += "Budi Santoso,budi@poltekkes.ac.id,Password123!,mahasiswa,2021001,,,1\n";
-  info += "Dr. Siti Rahayu,siti@poltekkes.ac.id,Password123!,dosen,,197001012000012001,,1\n";
+  info += "\nnama,email,password,role,nim,nip,noHp,angkatan,jurusanId\n";
+  info += "Budi Santoso,budi2021@poltekkes.ac.id,,mahasiswa,2021001001,,,2021,1\n";
+  info += "Siti Rahayu,siti2021@poltekkes.ac.id,,mahasiswa,2021001002,,,2021,1\n";
+  info += "Dr. Hendra Wijaya,hendra@poltekkes.ac.id,Password123!,dosen,,197001012000012001,,,1\n";
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=template_import_pengguna.csv");
   res.send("\uFEFF" + info);
@@ -72,17 +75,21 @@ router.post("/users", requireAuth, requireRole("admin"), async (req: AuthRequest
     const errors: string[] = [];
 
     for (const row of rows) {
-      const { nama, email, password, role, nim, nip, noHp, jurusanId } = row;
-      if (!nama || !email || !password || !role) {
-        gagal++; errors.push(`Baris ${row.nama || "?"}: kolom wajib tidak lengkap`); continue;
+      const { nama, email, role, nim, nip, noHp, angkatan, jurusanId } = row;
+      let { password } = row;
+      if (!nama || !email || !role) {
+        gagal++; errors.push(`Baris "${nama || email || "?"}" : kolom wajib (nama, email, role) tidak lengkap`); continue;
       }
+      if (!password) password = nim || nip || "Password123!";
       const existing = await db.query.usersTable.findFirst({ where: (u, { eq }) => eq(u.email, email) });
       if (existing) { gagal++; errors.push(`Email ${email} sudah terdaftar`); continue; }
       try {
         await db.insert(usersTable).values({
           nama, email, password: hashPassword(password),
-          role: role as any, nim: nim || null, nip: nip || null,
-          noHp: noHp || null, jurusanId: jurusanId ? parseInt(jurusanId) : null,
+          role: role as any,
+          nim: nim || null, nip: nip || null, noHp: noHp || null,
+          angkatan: angkatan || null,
+          jurusanId: jurusanId ? parseInt(jurusanId) : null,
           status: "aktif",
         });
         berhasil++;
@@ -90,7 +97,7 @@ router.post("/users", requireAuth, requireRole("admin"), async (req: AuthRequest
         gagal++; errors.push(`${email}: ${e.message}`);
       }
     }
-    res.json({ message: `Import selesai: ${berhasil} berhasil, ${gagal} gagal`, berhasil, gagal, errors });
+    res.json({ success: berhasil, berhasil, gagal, errors, message: `Import selesai: ${berhasil} berhasil, ${gagal} gagal` });
   } catch (e: any) {
     res.status(500).json({ message: "Gagal memproses CSV: " + e.message });
   }
