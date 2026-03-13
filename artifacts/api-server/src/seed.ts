@@ -21,6 +21,11 @@ export async function seedDefaultAdmin() {
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")
     `);
 
+    // Auto-migrate: add any new columns that may not exist yet (safe for production)
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS tanda_tangan text`);
+    await db.execute(sql`ALTER TABLE peminjaman_alat ADD COLUMN IF NOT EXISTS jam_pinjam text`);
+    await db.execute(sql`ALTER TABLE peminjaman_alat ADD COLUMN IF NOT EXISTS jam_kembali text`);
+
     // Ensure default admin exists
     const existing = await db
       .select({ id: usersTable.id })

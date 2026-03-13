@@ -7,17 +7,17 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useCreatePeminjamanAlat, useGetLaboratorium, useGetAlat } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Clock } from "lucide-react";
 
-// Simplified schema for frontend validation
 const formSchema = z.object({
   laboratoriumId: z.coerce.number().min(1, "Pilih laboratorium"),
   tanggalPinjam: z.string().min(1, "Pilih tanggal"),
+  jamPinjam: z.string().optional(),
   tanggalKembali: z.string().min(1, "Pilih tanggal"),
+  jamKembali: z.string().optional(),
   keperluan: z.string().min(5, "Keperluan terlalu singkat"),
 });
 
@@ -46,7 +46,7 @@ export default function FormPeminjaman() {
       data: {
         ...data,
         items
-      }
+      } as any
     }, {
       onSuccess: () => {
         toast({ title: "Berhasil", description: "Pengajuan peminjaman berhasil dibuat, menunggu verifikasi PLP." });
@@ -78,21 +78,47 @@ export default function FormPeminjaman() {
                 placeholder="Pilih Lab..."
                 searchPlaceholder="Cari nama lab..."
               />
+              {form.formState.errors.laboratoriumId && (
+                <p className="text-xs text-destructive">{form.formState.errors.laboratoriumId.message}</p>
+              )}
             </div>
             
             <div className="space-y-2">
               <Label className="font-semibold text-slate-700">Keperluan</Label>
               <Input {...form.register("keperluan")} className="h-12 rounded-xl bg-slate-50 border-slate-200" placeholder="Contoh: Praktikum Mikrobiologi 1" />
+              {form.formState.errors.keperluan && (
+                <p className="text-xs text-destructive">{form.formState.errors.keperluan.message}</p>
+              )}
             </div>
 
+            {/* Tanggal & Jam Pinjam */}
             <div className="space-y-2">
-              <Label className="font-semibold text-slate-700">Tanggal Pinjam</Label>
-              <Input type="date" {...form.register("tanggalPinjam")} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
+              <Label className="font-semibold text-slate-700">Tanggal Peminjaman</Label>
+              <div className="flex gap-2">
+                <Input type="date" {...form.register("tanggalPinjam")} className="h-12 rounded-xl bg-slate-50 border-slate-200 flex-1" />
+                <div className="relative">
+                  <Clock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Input type="time" {...form.register("jamPinjam")} className="h-12 rounded-xl bg-slate-50 border-slate-200 pl-9 w-32" placeholder="--:--" />
+                </div>
+              </div>
+              {form.formState.errors.tanggalPinjam && (
+                <p className="text-xs text-destructive">{form.formState.errors.tanggalPinjam.message}</p>
+              )}
             </div>
 
+            {/* Tanggal & Jam Kembali */}
             <div className="space-y-2">
-              <Label className="font-semibold text-slate-700">Tanggal Kembali</Label>
-              <Input type="date" {...form.register("tanggalKembali")} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
+              <Label className="font-semibold text-slate-700">Tanggal Pengembalian</Label>
+              <div className="flex gap-2">
+                <Input type="date" {...form.register("tanggalKembali")} className="h-12 rounded-xl bg-slate-50 border-slate-200 flex-1" />
+                <div className="relative">
+                  <Clock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Input type="time" {...form.register("jamKembali")} className="h-12 rounded-xl bg-slate-50 border-slate-200 pl-9 w-32" placeholder="--:--" />
+                </div>
+              </div>
+              {form.formState.errors.tanggalKembali && (
+                <p className="text-xs text-destructive">{form.formState.errors.tanggalKembali.message}</p>
+              )}
             </div>
           </div>
 

@@ -81,7 +81,7 @@ export default function PrintPeminjaman() {
                 ["Nama Peminjam", user?.nama || "-"],
                 ["NIM / NIP", nimNip || "-"],
                 ["Jurusan", user?.jurusan?.nama || "-"],
-                ["No. WhatsApp", user?.noWa || user?.noHp || "-"],
+                ["No. WhatsApp", (user?.noWa || user?.noHp) || "-"],
               ].map(([label, val]) => (
                 <tr key={label} className="border-b border-slate-100 last:border-0">
                   <td className="py-1.5 px-3 font-semibold text-slate-600 w-36 bg-slate-50 whitespace-nowrap">{label}</td>
@@ -94,8 +94,8 @@ export default function PrintPeminjaman() {
             <tbody>
               {[
                 ["Laboratorium", data.laboratorium?.nama || "-"],
-                ["Tgl Pinjam", fmt(data.tanggalPinjam)],
-                ["Tgl Kembali", fmt(data.tanggalKembali)],
+                ["Tgl Pinjam", `${fmt(data.tanggalPinjam)}${(data as any).jamPinjam ? ` pukul ${(data as any).jamPinjam}` : ""}`],
+                ["Tgl Kembali", `${fmt(data.tanggalKembali)}${(data as any).jamKembali ? ` pukul ${(data as any).jamKembali}` : ""}`],
                 ["Keperluan", data.keperluan],
               ].map(([label, val]) => (
                 <tr key={label} className="border-b border-slate-100 last:border-0">
