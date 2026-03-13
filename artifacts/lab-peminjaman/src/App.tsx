@@ -31,8 +31,10 @@ import PlpStokLab from "./pages/plp/StokLab";
 import GudangManajemen from "./pages/gudang/ManajemenBahan";
 import AdminNotifikasi from "./pages/admin/Notifikasi";
 
+import PeminjamanPhantom from "./pages/mahasiswa/PeminjamanPhantom";
 import PrintPermintaan from "./pages/shared/PrintPermintaan";
 import PrintPeminjaman from "./pages/shared/PrintPeminjaman";
+import PrintPeminjamanPhantom from "./pages/shared/PrintPeminjamanPhantom";
 import Profil from "./pages/profil/Profil";
 
 import NotFound from "./pages/not-found";
@@ -59,6 +61,7 @@ function Router() {
       {/* Print views - no sidebar */}
       <Route path="/print/permintaan-bahan/:id" component={PrintPermintaan} />
       <Route path="/print/peminjaman-alat/:id" component={PrintPeminjaman} />
+      <Route path="/print/peminjaman-phantom/:id" component={PrintPeminjamanPhantom} />
 
       <Route path="/dashboard">{() => <ProtectedRoute component={DashboardHome} />}</Route>
 
@@ -75,6 +78,7 @@ function Router() {
       <Route path="/mahasiswa/peminjaman">{() => <ProtectedRoute component={FormPeminjaman} roles={["mahasiswa", "dosen"]} />}</Route>
       <Route path="/mahasiswa/ruangan">{() => <ProtectedRoute component={PeminjamanRuangan} roles={["mahasiswa", "dosen"]} />}</Route>
       <Route path="/mahasiswa/permintaan">{() => <ProtectedRoute component={PermintaanBahan} roles={["mahasiswa", "plp", "dosen"]} />}</Route>
+      <Route path="/mahasiswa/phantom">{() => <ProtectedRoute component={PeminjamanPhantom} roles={["mahasiswa", "dosen", "plp"]} />}</Route>
       <Route path="/mahasiswa/riwayat">{() => <ProtectedRoute component={Riwayat} roles={["mahasiswa", "dosen"]} />}</Route>
       <Route path="/jadwal-ruangan">{() => <ProtectedRoute component={JadwalRuangan} roles={["mahasiswa", "dosen", "plp", "admin"]} />}</Route>
 

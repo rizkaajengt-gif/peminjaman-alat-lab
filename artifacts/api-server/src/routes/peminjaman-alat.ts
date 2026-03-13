@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, peminjamanAlatTable, peminjamanAlatItemTable, alatTable } from "@workspace/db";
-import { eq, and, SQL, inArray } from "drizzle-orm";
+import { eq, and, SQL } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
@@ -15,7 +15,7 @@ function generateNoPeminjaman(prefix: string): string {
 
 router.get("/", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { status, userId, laboratoriumId, tanggalMulai, tanggalSelesai } = req.query;
+    const { status, userId, laboratoriumId } = req.query;
     const conditions: SQL[] = [];
 
     if (req.user!.role === "mahasiswa") {
@@ -157,6 +157,7 @@ router.post("/:id/request-kembali", requireAuth, async (req: AuthRequest, res) =
   }
 });
 
+// Update jumlah item yang ada
 router.put("/:id/items", requireAuth, requireRole("plp", "admin"), async (req: AuthRequest, res) => {
   try {
     const { items } = req.body;
@@ -182,6 +183,54 @@ router.put("/:id/items", requireAuth, requireRole("plp", "admin"), async (req: A
     });
     res.json(result);
   } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Tambah item baru ke peminjaman (saat verifikasi)
+router.post("/:id/items/add", requireAuth, requireRole("plp", "admin"), async (req: AuthRequest, res) => {
+  try {
+    const { alatId, jumlah } = req.body;
+    if (!alatId || !jumlah) { res.status(400).json({ message: "alatId dan jumlah wajib diisi" }); return; }
+
+    const peminjaman = await db.query.peminjamanAlatTable.findFirst({
+      where: eq(peminjamanAlatTable.id, Number(req.params.id)),
+    });
+    if (!peminjaman) { res.status(404).json({ message: "Data tidak ditemukan" }); return; }
+    if (peminjaman.status !== "menunggu") { res.status(400).json({ message: "Hanya bisa diubah saat status menunggu" }); return; }
+
+    await db.insert(peminjamanAlatItemTable).values({
+      peminjamanId: Number(req.params.id), alatId: Number(alatId), jumlah: Number(jumlah),
+    });
+
+    const result = await db.query.peminjamanAlatTable.findFirst({
+      where: eq(peminjamanAlatTable.id, Number(req.params.id)),
+      with: { user: true, laboratorium: true, items: { with: { alat: true } } },
+    });
+    res.json(result);
+  } catch {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Hapus item dari peminjaman (saat verifikasi)
+router.delete("/:id/items/:itemId", requireAuth, requireRole("plp", "admin"), async (req: AuthRequest, res) => {
+  try {
+    const peminjaman = await db.query.peminjamanAlatTable.findFirst({
+      where: eq(peminjamanAlatTable.id, Number(req.params.id)),
+    });
+    if (!peminjaman) { res.status(404).json({ message: "Data tidak ditemukan" }); return; }
+    if (peminjaman.status !== "menunggu") { res.status(400).json({ message: "Hanya bisa diubah saat status menunggu" }); return; }
+
+    await db.delete(peminjamanAlatItemTable)
+      .where(and(eq(peminjamanAlatItemTable.id, Number(req.params.itemId)), eq(peminjamanAlatItemTable.peminjamanId, Number(req.params.id))));
+
+    const result = await db.query.peminjamanAlatTable.findFirst({
+      where: eq(peminjamanAlatTable.id, Number(req.params.id)),
+      with: { user: true, laboratorium: true, items: { with: { alat: true } } },
+    });
+    res.json(result);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });

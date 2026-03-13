@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetPeminjamanAlat, useUpdatePeminjamanAlatStatus, useGetPeminjamanRuangan, useUpdatePeminjamanRuanganStatus, useGetUsers, useVerifyUser, useGetPermintaanBahan, useUpdatePermintaanBahanStatus, customFetch } from "@workspace/api-client-react";
+import { useGetPeminjamanAlat, useUpdatePeminjamanAlatStatus, useGetPeminjamanRuangan, useUpdatePeminjamanRuanganStatus, useGetUsers, useVerifyUser, useGetPermintaanBahan, useUpdatePermintaanBahanStatus, useGetAlat, customFetch } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { StatusBadge } from "@/components/ui-custom/StatusBadge";
 import { Card } from "@/components/ui/card";
@@ -11,9 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, XCircle, ClipboardList, CalendarDays, Users, Pencil, Printer, FlaskConical } from "lucide-react";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { Loader2, CheckCircle2, XCircle, ClipboardList, CalendarDays, Users, Pencil, Printer, FlaskConical, Ghost, Plus, Trash2 } from "lucide-react";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -30,15 +31,21 @@ export default function PlpVerifikasi() {
   const { data: pa } = useGetPeminjamanAlat({ status: "menunggu" as any });
   const { data: pr } = useGetPeminjamanRuangan({ status: "menunggu" as any });
   const { data: usersPending } = useGetUsers({ role: "mahasiswa" as any });
+  const { data: phantom } = useQuery({
+    queryKey: ["/api/peminjaman-phantom", { status: "menunggu" }],
+    queryFn: () => customFetch("/api/peminjaman-phantom?status=menunggu"),
+    select: (d: any) => d as any[],
+  });
   const pendingUsers = usersPending?.filter((u: any) => u.status === "menunggu") || [];
 
   return (
     <div className="space-y-6">
       <PageHeader title="Dashboard Verifikasi PLP" description="Tinjau dan verifikasi semua pengajuan dari mahasiswa dan dosen." />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Peminjaman Alat Menunggu", value: pa?.length || 0, color: "text-blue-600" },
-          { label: "Peminjaman Ruangan Menunggu", value: pr?.length || 0, color: "text-purple-600" },
+          { label: "Peminjaman Phantom Menunggu", value: phantom?.length || 0, color: "text-purple-600" },
+          { label: "Peminjaman Ruangan Menunggu", value: pr?.length || 0, color: "text-teal-600" },
           { label: "Pendaftaran Mahasiswa Menunggu", value: pendingUsers.length, color: "text-amber-600" },
         ].map((s, i) => (
           <Card key={i} className="p-5 border-none shadow-sm">
@@ -49,21 +56,25 @@ export default function PlpVerifikasi() {
       </div>
 
       <Tabs defaultValue="alat">
-        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4">
-          <TabsTrigger value="alat" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4 flex-wrap">
+          <TabsTrigger value="alat" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <ClipboardList className="w-4 h-4" />Peminjaman Alat
           </TabsTrigger>
-          <TabsTrigger value="ruangan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+          <TabsTrigger value="phantom" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <Ghost className="w-4 h-4" />Peminjaman Phantom
+          </TabsTrigger>
+          <TabsTrigger value="ruangan" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <CalendarDays className="w-4 h-4" />Peminjaman Ruangan
           </TabsTrigger>
-          <TabsTrigger value="bahan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+          <TabsTrigger value="bahan" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <FlaskConical className="w-4 h-4" />Permintaan Bahan
           </TabsTrigger>
-          <TabsTrigger value="mahasiswa" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+          <TabsTrigger value="mahasiswa" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <Users className="w-4 h-4" />Pendaftaran Mahasiswa
           </TabsTrigger>
         </TabsList>
         <TabsContent value="alat"><VerifikasiAlatTab /></TabsContent>
+        <TabsContent value="phantom"><VerifikasiPhantomTab /></TabsContent>
         <TabsContent value="ruangan"><VerifikasiRuanganTab /></TabsContent>
         <TabsContent value="bahan"><VerifikasiBahanTab /></TabsContent>
         <TabsContent value="mahasiswa"><VerifikasiMahasiswaTab /></TabsContent>
@@ -72,6 +83,31 @@ export default function PlpVerifikasi() {
   );
 }
 
+// ─── Item Edit Dialog Helper ───────────────────────────────────────────────────
+
+function ItemEditControls({ item, editMode, editedItems, setEditedItems, onDelete }: {
+  item: any; editMode: boolean; editedItems: Record<number, number>;
+  setEditedItems: (fn: (prev: Record<number, number>) => Record<number, number>) => void;
+  onDelete: (id: number) => void;
+}) {
+  if (!editMode) return <span className="text-muted-foreground font-semibold">{editedItems[item.id] ?? item.jumlah}</span>;
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        type="number" min={1}
+        className="w-16 h-7 rounded-lg text-center text-sm"
+        value={editedItems[item.id] ?? item.jumlah}
+        onChange={e => setEditedItems(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
+      />
+      <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-rose-500 hover:bg-rose-50" onClick={() => onDelete(item.id)}>
+        <Trash2 className="w-3.5 h-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+// ─── Verifikasi Alat Tab ───────────────────────────────────────────────────────
+
 function VerifikasiAlatTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -79,19 +115,35 @@ function VerifikasiAlatTab() {
   const [catatan, setCatatan] = useState("");
   const [editedItems, setEditedItems] = useState<Record<number, number>>({});
   const [editMode, setEditMode] = useState(false);
+  const [newAlatId, setNewAlatId] = useState<string>("");
+  const [newJumlah, setNewJumlah] = useState(1);
   const { data, isLoading } = useGetPeminjamanAlat({ status: "menunggu" as any });
   const updateStatus = useUpdatePeminjamanAlatStatus();
+
+  const { data: alatList } = useGetAlat(
+    { laboratoriumId: selected?.laboratoriumId },
+    { query: { enabled: !!selected } }
+  );
 
   const updateItemsMutation = useMutation({
     mutationFn: (vars: { id: number; items: { id: number; jumlah: number }[] }) =>
       customFetch(`/api/peminjaman-alat/${vars.id}/items`, { method: "PUT", body: JSON.stringify({ items: vars.items }), headers: { "Content-Type": "application/json" } }),
-    onSuccess: (data: any) => {
-      setSelected(data);
-      setEditMode(false);
-      toast({ title: "Jumlah berhasil diperbarui" });
-      qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] });
-    },
-    onError: () => toast({ variant: "destructive", description: "Gagal memperbarui jumlah" }),
+    onSuccess: (data: any) => { setSelected(data); setEditMode(false); toast({ title: "Jumlah diperbarui" }); qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal memperbarui" }),
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: ({ peminjamanId, itemId }: { peminjamanId: number; itemId: number }) =>
+      customFetch(`/api/peminjaman-alat/${peminjamanId}/items/${itemId}`, { method: "DELETE" }),
+    onSuccess: (data: any) => { setSelected(data); setEditedItems({}); toast({ title: "Item dihapus" }); qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal menghapus item" }),
+  });
+
+  const addItemMutation = useMutation({
+    mutationFn: ({ peminjamanId, alatId, jumlah }: { peminjamanId: number; alatId: number; jumlah: number }) =>
+      customFetch(`/api/peminjaman-alat/${peminjamanId}/items/add`, { method: "POST", body: JSON.stringify({ alatId, jumlah }), headers: { "Content-Type": "application/json" } }),
+    onSuccess: (data: any) => { setSelected(data); setNewAlatId(""); setNewJumlah(1); toast({ title: "Alat ditambahkan" }); qc.invalidateQueries({ queryKey: ["/api/peminjaman-alat"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal menambah alat" }),
   });
 
   const handleAction = (status: string) => {
@@ -104,19 +156,14 @@ function VerifikasiAlatTab() {
 
   const handleSaveItems = () => {
     if (!selected) return;
-    const items = selected.items?.map((item: any) => ({
-      id: item.id,
-      jumlah: editedItems[item.id] ?? item.jumlah,
-    })) || [];
+    const items = selected.items?.map((item: any) => ({ id: item.id, jumlah: editedItems[item.id] ?? item.jumlah })) || [];
     updateItemsMutation.mutate({ id: selected.id, items });
   };
 
-  const openDialog = (p: any) => {
-    setSelected(p);
-    setCatatan("");
-    setEditMode(false);
-    setEditedItems({});
-  };
+  const openDialog = (p: any) => { setSelected(p); setCatatan(""); setEditMode(false); setEditedItems({}); setNewAlatId(""); setNewJumlah(1); };
+
+  const existingAlatIds = selected?.items?.map((i: any) => i.alatId) || [];
+  const availableAlat = (alatList || []).filter((a: any) => !existingAlatIds.includes(a.id) && a.stokTersedia > 0);
 
   return (
     <>
@@ -136,10 +183,7 @@ function VerifikasiAlatTab() {
             : data?.map(p => (
               <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
                 <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
-                <TableCell>
-                  <div className="font-medium text-sm">{p.user?.nama}</div>
-                  <div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.role}</div>
-                </TableCell>
+                <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground">{p.user?.nim || (p.user as any)?.role}</div></TableCell>
                 <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</TableCell>
                 <TableCell className="text-sm">{formatDate(p.tanggalPinjam)}</TableCell>
@@ -149,8 +193,9 @@ function VerifikasiAlatTab() {
           </TableBody>
         </Table>
       </Card>
+
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) { setSelected(null); setEditMode(false); setEditedItems({}); } }}>
-        <DialogContent className="rounded-2xl max-w-lg">
+        <DialogContent className="rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Verifikasi Peminjaman Alat</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-4 py-2">
@@ -161,39 +206,55 @@ function VerifikasiAlatTab() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Pinjam</span><span>{formatDate(selected.tanggalPinjam)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Kembali</span><span>{formatDate(selected.tanggalKembali)}</span></div>
               </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">Daftar Alat:</span>
-                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1" onClick={() => { setEditMode(!editMode); setEditedItems({}); }}>
-                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan Edit" : "Edit Jumlah"}
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1" onClick={() => { setEditMode(!editMode); setEditedItems({}); setNewAlatId(""); setNewJumlah(1); }}>
+                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan" : "Edit"}
                 </Button>
               </div>
-              {selected.items?.map((item: any) => (
-                <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
-                  <div>
-                    <div className="font-medium">{item.alat?.nama}</div>
-                    <div className="text-xs text-muted-foreground">Diminta: {item.jumlah} {item.alat?.satuan}</div>
-                  </div>
-                  {editMode ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        className="w-20 h-8 rounded-lg text-center text-sm"
-                        value={editedItems[item.id] ?? item.jumlah}
-                        onChange={e => setEditedItems(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
-                      />
-                      <span className="text-xs text-muted-foreground">{item.alat?.satuan}</span>
+
+              <div className="space-y-2">
+                {selected.items?.map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
+                    <div>
+                      <div className="font-medium">{item.alat?.nama}</div>
+                      <div className="text-xs text-muted-foreground">Diminta: {item.jumlah} {item.alat?.satuan}</div>
                     </div>
-                  ) : (
-                    <span className="text-muted-foreground font-semibold">{item.jumlah} {item.alat?.satuan}</span>
-                  )}
-                </div>
-              ))}
+                    <ItemEditControls
+                      item={item} editMode={editMode} editedItems={editedItems} setEditedItems={setEditedItems}
+                      onDelete={(itemId) => deleteItemMutation.mutate({ peminjamanId: selected.id, itemId })}
+                    />
+                  </div>
+                ))}
+              </div>
+
               {editMode && (
-                <Button onClick={handleSaveItems} disabled={updateItemsMutation.isPending} className="w-full rounded-xl gap-2">
-                  {updateItemsMutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : "Simpan Perubahan Jumlah"}
-                </Button>
+                <>
+                  <div className="border border-dashed border-slate-300 rounded-xl p-3 space-y-2 bg-slate-50/50">
+                    <p className="text-xs font-semibold text-slate-600 flex items-center gap-1"><Plus className="w-3 h-3" />Tambah Alat</p>
+                    <div className="flex gap-2">
+                      <Select value={newAlatId} onValueChange={setNewAlatId}>
+                        <SelectTrigger className="flex-1 h-8 text-xs rounded-lg"><SelectValue placeholder="Pilih alat..." /></SelectTrigger>
+                        <SelectContent>
+                          {availableAlat.map((a: any) => (
+                            <SelectItem key={a.id} value={String(a.id)}>{a.nama} (stok: {a.stokTersedia})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" min={1} value={newJumlah} onChange={e => setNewJumlah(Number(e.target.value))} className="w-16 h-8 text-xs rounded-lg text-center" />
+                      <Button size="sm" className="h-8 text-xs rounded-lg px-3" disabled={!newAlatId || addItemMutation.isPending}
+                        onClick={() => addItemMutation.mutate({ peminjamanId: selected.id, alatId: Number(newAlatId), jumlah: newJumlah })}>
+                        {addItemMutation.isPending ? <Loader2 className="animate-spin w-3 h-3" /> : "Tambah"}
+                      </Button>
+                    </div>
+                  </div>
+                  <Button onClick={handleSaveItems} disabled={updateItemsMutation.isPending} className="w-full rounded-xl gap-2 h-9">
+                    {updateItemsMutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : "Simpan Perubahan Jumlah"}
+                  </Button>
+                </>
               )}
+
               <div className="space-y-1.5">
                 <Label>Catatan</Label>
                 <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional..." className="rounded-xl resize-none" rows={2} />
@@ -213,6 +274,187 @@ function VerifikasiAlatTab() {
     </>
   );
 }
+
+// ─── Verifikasi Phantom Tab ────────────────────────────────────────────────────
+
+function VerifikasiPhantomTab() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [selected, setSelected] = useState<any>(null);
+  const [catatan, setCatatan] = useState("");
+  const [editedItems, setEditedItems] = useState<Record<number, number>>({});
+  const [editMode, setEditMode] = useState(false);
+  const [newPhantomId, setNewPhantomId] = useState<string>("");
+  const [newJumlah, setNewJumlah] = useState(1);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/peminjaman-phantom", { status: "menunggu" }],
+    queryFn: () => customFetch("/api/peminjaman-phantom?status=menunggu"),
+    select: (d: any) => d as any[],
+  });
+
+  const { data: phantomList } = useQuery({
+    queryKey: ["/api/phantom"],
+    queryFn: () => customFetch("/api/phantom"),
+    select: (d: any) => d as any[],
+    enabled: !!selected,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      customFetch(`/api/peminjaman-phantom/${id}/status`, { method: "PUT", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } }),
+    onSuccess: () => { toast({ title: "Status diperbarui" }); setSelected(null); setCatatan(""); setEditedItems({}); setEditMode(false); qc.invalidateQueries({ queryKey: ["/api/peminjaman-phantom"] }); },
+    onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message }),
+  });
+
+  const updateItemsMutation = useMutation({
+    mutationFn: (vars: { id: number; items: { id: number; jumlah: number }[] }) =>
+      customFetch(`/api/peminjaman-phantom/${vars.id}/items`, { method: "PUT", body: JSON.stringify({ items: vars.items }), headers: { "Content-Type": "application/json" } }),
+    onSuccess: (data: any) => { setSelected(data); setEditMode(false); toast({ title: "Jumlah diperbarui" }); qc.invalidateQueries({ queryKey: ["/api/peminjaman-phantom"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal memperbarui" }),
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: ({ peminjamanId, itemId }: { peminjamanId: number; itemId: number }) =>
+      customFetch(`/api/peminjaman-phantom/${peminjamanId}/items/${itemId}`, { method: "DELETE" }),
+    onSuccess: (data: any) => { setSelected(data); setEditedItems({}); toast({ title: "Item dihapus" }); qc.invalidateQueries({ queryKey: ["/api/peminjaman-phantom"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal menghapus item" }),
+  });
+
+  const addItemMutation = useMutation({
+    mutationFn: ({ peminjamanId, phantomId, jumlah }: { peminjamanId: number; phantomId: number; jumlah: number }) =>
+      customFetch(`/api/peminjaman-phantom/${peminjamanId}/items/add`, { method: "POST", body: JSON.stringify({ phantomId, jumlah }), headers: { "Content-Type": "application/json" } }),
+    onSuccess: (data: any) => { setSelected(data); setNewPhantomId(""); setNewJumlah(1); toast({ title: "Phantom ditambahkan" }); qc.invalidateQueries({ queryKey: ["/api/peminjaman-phantom"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal menambah phantom" }),
+  });
+
+  const handleAction = (status: string) => {
+    if (!selected) return;
+    updateStatusMutation.mutate({ id: selected.id, data: { status, catatan } });
+  };
+
+  const handleSaveItems = () => {
+    if (!selected) return;
+    const items = selected.items?.map((item: any) => ({ id: item.id, jumlah: editedItems[item.id] ?? item.jumlah })) || [];
+    updateItemsMutation.mutate({ id: selected.id, items });
+  };
+
+  const openDialog = (p: any) => { setSelected(p); setCatatan(""); setEditMode(false); setEditedItems({}); setNewPhantomId(""); setNewJumlah(1); };
+
+  const existingPhantomIds = selected?.items?.map((i: any) => i.phantomId) || [];
+  const availablePhantom = (phantomList || []).filter((p: any) => !existingPhantomIds.includes(p.id) && p.stokTersedia > 0);
+
+  return (
+    <>
+      <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+        <Table>
+          <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+            <TableHead className="font-semibold">No. Peminjaman</TableHead>
+            <TableHead className="font-semibold">Pemohon</TableHead>
+            <TableHead className="font-semibold">Lab</TableHead>
+            <TableHead className="font-semibold">Phantom</TableHead>
+            <TableHead className="font-semibold">Tgl Pinjam</TableHead>
+            <TableHead className="text-right font-semibold">Aksi</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+            : !data?.length ? <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">Tidak ada pengajuan phantom yang perlu diverifikasi</TableCell></TableRow>
+            : data.map((p: any) => (
+              <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
+                <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div></TableCell>
+                <TableCell className="text-sm">{p.laboratorium?.nama || "-"}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{p.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ")}</TableCell>
+                <TableCell className="text-sm">{formatDate(p.tanggalPinjam)}</TableCell>
+                <TableCell className="text-right"><Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => openDialog(p)}>Proses</Button></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) { setSelected(null); setEditMode(false); setEditedItems({}); } }}>
+        <DialogContent className="rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Verifikasi Peminjaman Phantom</DialogTitle></DialogHeader>
+          {selected && (
+            <div className="space-y-4 py-2">
+              <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Pemohon</span><span className="font-bold">{selected.user?.nama}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Lab</span><span>{selected.laboratorium?.nama || "-"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Keperluan</span><span className="text-right max-w-xs">{selected.keperluan}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tgl Pinjam</span><span>{formatDate(selected.tanggalPinjam)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tgl Kembali</span><span>{formatDate(selected.tanggalKembali)}</span></div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Daftar Phantom:</span>
+                <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1" onClick={() => { setEditMode(!editMode); setEditedItems({}); setNewPhantomId(""); setNewJumlah(1); }}>
+                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan" : "Edit"}
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {selected.items?.map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
+                    <div>
+                      <div className="font-medium">{item.phantom?.nama}</div>
+                      <div className="text-xs text-muted-foreground">{item.phantom?.kode} · {item.jumlah} {item.phantom?.satuan}</div>
+                    </div>
+                    <ItemEditControls
+                      item={item} editMode={editMode} editedItems={editedItems} setEditedItems={setEditedItems}
+                      onDelete={(itemId) => deleteItemMutation.mutate({ peminjamanId: selected.id, itemId })}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {editMode && (
+                <>
+                  <div className="border border-dashed border-slate-300 rounded-xl p-3 space-y-2 bg-slate-50/50">
+                    <p className="text-xs font-semibold text-slate-600 flex items-center gap-1"><Plus className="w-3 h-3" />Tambah Phantom</p>
+                    <div className="flex gap-2">
+                      <Select value={newPhantomId} onValueChange={setNewPhantomId}>
+                        <SelectTrigger className="flex-1 h-8 text-xs rounded-lg"><SelectValue placeholder="Pilih phantom..." /></SelectTrigger>
+                        <SelectContent>
+                          {availablePhantom.map((p: any) => (
+                            <SelectItem key={p.id} value={String(p.id)}>{p.nama} (stok: {p.stokTersedia})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" min={1} value={newJumlah} onChange={e => setNewJumlah(Number(e.target.value))} className="w-16 h-8 text-xs rounded-lg text-center" />
+                      <Button size="sm" className="h-8 text-xs rounded-lg px-3" disabled={!newPhantomId || addItemMutation.isPending}
+                        onClick={() => addItemMutation.mutate({ peminjamanId: selected.id, phantomId: Number(newPhantomId), jumlah: newJumlah })}>
+                        {addItemMutation.isPending ? <Loader2 className="animate-spin w-3 h-3" /> : "Tambah"}
+                      </Button>
+                    </div>
+                  </div>
+                  <Button onClick={handleSaveItems} disabled={updateItemsMutation.isPending} className="w-full rounded-xl gap-2 h-9">
+                    {updateItemsMutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : "Simpan Perubahan Jumlah"}
+                  </Button>
+                </>
+              )}
+
+              <div className="space-y-1.5">
+                <Label>Catatan</Label>
+                <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional..." className="rounded-xl resize-none" rows={2} />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">Batal</Button>
+            {selected && <Button variant="outline" onClick={() => openPrint("peminjaman-phantom", selected.id)} className="rounded-xl gap-2"><Printer className="w-4 h-4" />Cetak</Button>}
+            <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatusMutation.isPending || editMode} className="rounded-xl gap-2"><XCircle className="w-4 h-4" />Tolak</Button>
+            <Button onClick={() => handleAction("disetujui")} disabled={updateStatusMutation.isPending || editMode} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
+              {updateStatusMutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Setujui</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ─── Verifikasi Ruangan Tab ────────────────────────────────────────────────────
 
 function VerifikasiRuanganTab() {
   const { toast } = useToast();
@@ -289,6 +531,8 @@ function VerifikasiRuanganTab() {
   );
 }
 
+// ─── Verifikasi Mahasiswa Tab ──────────────────────────────────────────────────
+
 function VerifikasiMahasiswaTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -341,6 +585,8 @@ function VerifikasiMahasiswaTab() {
   );
 }
 
+// ─── Verifikasi Bahan Tab ──────────────────────────────────────────────────────
+
 function VerifikasiBahanTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -357,11 +603,7 @@ function VerifikasiBahanTab() {
       ? selected.items?.map((item: any) => ({ itemId: item.id, jumlah: editedItems[item.id] ?? item.jumlahDiminta }))
       : undefined;
     updateStatus.mutate({ id: selected.id, data: { status, catatan: catatan || undefined, jumlahDisetujui } as any }, {
-      onSuccess: () => {
-        toast({ title: status === "disetujui" ? "Permintaan disetujui" : "Permintaan ditolak" });
-        setSelected(null); setCatatan(""); setEditMode(false); setEditedItems({});
-        qc.invalidateQueries({ queryKey: ["/api/permintaan-bahan"] });
-      },
+      onSuccess: () => { toast({ title: status === "disetujui" ? "Permintaan disetujui" : "Permintaan ditolak" }); setSelected(null); setCatatan(""); setEditMode(false); setEditedItems({}); qc.invalidateQueries({ queryKey: ["/api/permintaan-bahan"] }); },
       onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message }),
     });
   };
@@ -388,32 +630,31 @@ function VerifikasiBahanTab() {
                 <TableCell className="text-sm max-w-xs truncate">{p.keperluan}</TableCell>
                 <TableCell className="text-xs text-muted-foreground max-w-xs">{p.items?.map((i: any) => `${i.bahan?.nama} (${i.jumlahDiminta} ${i.bahan?.satuan})`).join(", ")}</TableCell>
                 <TableCell className="text-sm">{formatDate(p.tanggalDibutuhkan)}</TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak" onClick={() => openPrint("permintaan-bahan", p.id)}><Printer className="w-4 h-4" /></Button>
-                  <Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => { setSelected(p); setCatatan(""); setEditMode(false); setEditedItems({}); }}>Proses</Button>
-                </TableCell>
+                <TableCell className="text-right"><Button size="sm" className="rounded-lg h-8 text-xs" onClick={() => { setSelected(p); setCatatan(""); setEditMode(false); setEditedItems({}); }}>Proses</Button></TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
 
-      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) { setSelected(null); setEditMode(false); setEditedItems({}); } }}>
-        <DialogContent className="rounded-2xl max-w-lg">
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Verifikasi Permintaan Bahan</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-4 py-2">
               <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">No. Permintaan</span><span className="font-mono font-bold">{selected.noPermintaan}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Pemohon</span><span className="font-medium">{selected.user?.nama}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Keperluan</span><span className="font-medium text-right max-w-xs">{selected.keperluan}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Pemohon</span><span className="font-bold">{selected.user?.nama}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Keperluan</span><span className="text-right max-w-xs">{selected.keperluan}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tgl Dibutuhkan</span><span>{formatDate(selected.tanggalDibutuhkan)}</span></div>
               </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">Daftar Bahan:</span>
                 <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg gap-1" onClick={() => { setEditMode(!editMode); setEditedItems({}); }}>
-                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan Edit" : "Edit Jumlah"}
+                  <Pencil className="w-3 h-3" />{editMode ? "Batalkan" : "Edit Jumlah"}
                 </Button>
               </div>
+
               {selected.items?.map((item: any) => (
                 <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3 text-sm">
                   <div>
@@ -422,25 +663,25 @@ function VerifikasiBahanTab() {
                   </div>
                   {editMode ? (
                     <div className="flex items-center gap-2">
-                      <Input type="number" min={0} className="w-20 h-8 rounded-lg text-center text-sm"
+                      <Input type="number" min={1} className="w-20 h-8 rounded-lg text-center text-sm"
                         value={editedItems[item.id] ?? item.jumlahDiminta}
                         onChange={e => setEditedItems(prev => ({ ...prev, [item.id]: Number(e.target.value) }))} />
                       <span className="text-xs text-muted-foreground">{item.bahan?.satuan}</span>
                     </div>
                   ) : (
-                    <span className="font-semibold">{item.jumlahDiminta} {item.bahan?.satuan}</span>
+                    <span className="text-muted-foreground font-semibold">{editedItems[item.id] ?? item.jumlahDiminta} {item.bahan?.satuan}</span>
                   )}
                 </div>
               ))}
+
               <div className="space-y-1.5">
-                <Label>Catatan (Opsional)</Label>
-                <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan untuk pemohon..." className="rounded-xl resize-none" rows={2} />
+                <Label>Catatan</Label>
+                <Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional..." className="rounded-xl resize-none" rows={2} />
               </div>
             </div>
           )}
           <DialogFooter className="gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">Batal</Button>
-            {selected && <Button variant="outline" onClick={() => openPrint("permintaan-bahan", selected.id)} className="rounded-xl gap-2"><Printer className="w-4 h-4" />Cetak</Button>}
             <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatus.isPending} className="rounded-xl gap-2"><XCircle className="w-4 h-4" />Tolak</Button>
             <Button onClick={() => handleAction("disetujui")} disabled={updateStatus.isPending} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
               {updateStatus.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Setujui</>}

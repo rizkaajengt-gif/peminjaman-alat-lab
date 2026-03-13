@@ -16,6 +16,8 @@ import exportRouter from "./export.js";
 import importRouter from "./import.js";
 import notifikasiRouter from "./notifikasi.js";
 import transferBahanRouter from "./transfer-bahan.js";
+import phantomRouter from "./phantom.js";
+import peminjamanPhantomRouter from "./peminjaman-phantom.js";
 
 const router: IRouter = Router();
 
@@ -36,5 +38,7 @@ router.use("/export", exportRouter);
 router.use("/import", importRouter);
 router.use("/notifikasi", notifikasiRouter);
 router.use("/transfer-bahan", transferBahanRouter);
+router.use("/phantom", phantomRouter);
+router.use("/peminjaman-phantom", peminjamanPhantomRouter);
 
 export default router;

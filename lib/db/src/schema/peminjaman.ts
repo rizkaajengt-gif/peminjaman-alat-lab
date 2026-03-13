@@ -56,11 +56,62 @@ export const peminjamanRuanganTable = pgTable("peminjaman_ruangan", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// ─── Phantom ──────────────────────────────────────────────────────────────────
+
+export const phantomTable = pgTable("phantom", {
+  id: serial("id").primaryKey(),
+  nama: text("nama").notNull(),
+  kode: text("kode").notNull().unique(),
+  deskripsi: text("deskripsi"),
+  kondisi: text("kondisi").notNull().default("baik"),
+  stok: integer("stok").notNull().default(0),
+  stokTersedia: integer("stok_tersedia").notNull().default(0),
+  satuan: text("satuan").notNull().default("unit"),
+  laboratoriumId: integer("laboratorium_id").references(() => laboratoriumTable.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const peminjamanPhantomTable = pgTable("peminjaman_phantom", {
+  id: serial("id").primaryKey(),
+  noPeminjaman: text("no_peminjaman").notNull().unique(),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  laboratoriumId: integer("laboratorium_id").references(() => laboratoriumTable.id),
+  tanggalPinjam: date("tanggal_pinjam").notNull(),
+  jamPinjam: text("jam_pinjam"),
+  tanggalKembali: date("tanggal_kembali").notNull(),
+  jamKembali: text("jam_kembali"),
+  tanggalDikembalikan: date("tanggal_dikembalikan"),
+  keperluan: text("keperluan").notNull(),
+  status: statusPeminjamanEnum("status").notNull().default("menunggu"),
+  catatanPlp: text("catatan_plp"),
+  verifikasiOleh: integer("verifikasi_oleh").references(() => usersTable.id),
+  requestKembali: text("request_kembali"),
+  kondisiKembali: text("kondisi_kembali"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const peminjamanPhantomItemTable = pgTable("peminjaman_phantom_item", {
+  id: serial("id").primaryKey(),
+  peminjamanId: integer("peminjaman_id").notNull().references(() => peminjamanPhantomTable.id),
+  phantomId: integer("phantom_id").notNull().references(() => phantomTable.id),
+  jumlah: integer("jumlah").notNull().default(1),
+});
+
+// ─── Schemas & Types ──────────────────────────────────────────────────────────
+
 export const insertPeminjamanAlatSchema = createInsertSchema(peminjamanAlatTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPeminjamanRuanganSchema = createInsertSchema(peminjamanRuanganTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPhantomSchema = createInsertSchema(phantomTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPeminjamanPhantomSchema = createInsertSchema(peminjamanPhantomTable).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertPeminjamanAlat = z.infer<typeof insertPeminjamanAlatSchema>;
 export type PeminjamanAlat = typeof peminjamanAlatTable.$inferSelect;
 export type PeminjamanAlatItem = typeof peminjamanAlatItemTable.$inferSelect;
 export type InsertPeminjamanRuangan = z.infer<typeof insertPeminjamanRuanganSchema>;
 export type PeminjamanRuangan = typeof peminjamanRuanganTable.$inferSelect;
+export type Phantom = typeof phantomTable.$inferSelect;
+export type InsertPhantom = z.infer<typeof insertPhantomSchema>;
+export type PeminjamanPhantom = typeof peminjamanPhantomTable.$inferSelect;
+export type PeminjamanPhantomItem = typeof peminjamanPhantomItemTable.$inferSelect;

@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, ClipboardList, CalendarDays, FlaskConical, Printer, RotateCcw } from "lucide-react";
+import { Loader2, ClipboardList, CalendarDays, FlaskConical, Printer, RotateCcw, Ghost } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 function formatDate(d: string | undefined) {
@@ -19,12 +18,16 @@ function formatDate(d: string | undefined) {
 }
 
 export default function MahasiswaRiwayat() {
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { data: peminjamanAlat, isLoading: l1 } = useGetPeminjamanAlat({});
   const { data: peminjamanRuangan, isLoading: l2 } = useGetPeminjamanRuangan({});
   const { data: permintaanBahan, isLoading: l3 } = useGetPermintaanBahan({});
+  const { data: peminjamanPhantom, isLoading: l4 } = useQuery({
+    queryKey: ["/api/peminjaman-phantom"],
+    queryFn: () => customFetch("/api/peminjaman-phantom"),
+    select: (d: any) => d as any[],
+  });
 
   const openPrint = (type: string, id: number) => {
     window.open(`${import.meta.env.BASE_URL}print/${type}/${id}`, "_blank");
@@ -39,18 +42,30 @@ export default function MahasiswaRiwayat() {
     onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message || "Gagal mengajukan pengembalian" }),
   });
 
+  const requestKembaliPhantom = useMutation({
+    mutationFn: (id: number) => customFetch(`/api/peminjaman-phantom/${id}/request-kembali`, { method: "POST" }),
+    onSuccess: () => {
+      toast({ title: "Pengajuan pengembalian phantom terkirim" });
+      qc.invalidateQueries({ queryKey: ["/api/peminjaman-phantom"] });
+    },
+    onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message || "Gagal mengajukan pengembalian" }),
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader title="Riwayat Transaksi" description="Semua riwayat pengajuan peminjaman dan permintaan bahan Anda." />
       <Tabs defaultValue="alat">
-        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4">
-          <TabsTrigger value="alat" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4 flex-wrap">
+          <TabsTrigger value="alat" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <ClipboardList className="w-4 h-4" />Peminjaman Alat
           </TabsTrigger>
-          <TabsTrigger value="ruangan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+          <TabsTrigger value="phantom" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+            <Ghost className="w-4 h-4" />Peminjaman Phantom
+          </TabsTrigger>
+          <TabsTrigger value="ruangan" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <CalendarDays className="w-4 h-4" />Peminjaman Ruangan
           </TabsTrigger>
-          <TabsTrigger value="bahan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+          <TabsTrigger value="bahan" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
             <FlaskConical className="w-4 h-4" />Permintaan Bahan
           </TabsTrigger>
         </TabsList>
@@ -80,9 +95,8 @@ export default function MahasiswaRiwayat() {
                     <TableCell><StatusBadge status={p.status} /></TableCell>
                     <TableCell className="text-right space-x-1">
                       {p.status === "dipinjam" && p.requestKembali !== "menunggu" && p.requestKembali !== "selesai" && (
-                        <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-orange-300 text-orange-700 hover:bg-orange-50 gap-1" title="Ajukan Pengembalian"
-                          disabled={requestKembali.isPending}
-                          onClick={() => requestKembali.mutate(p.id)}>
+                        <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-orange-300 text-orange-700 hover:bg-orange-50 gap-1"
+                          disabled={requestKembali.isPending} onClick={() => requestKembali.mutate(p.id)}>
                           <RotateCcw className="w-3 h-3" />Kembalikan
                         </Button>
                       )}
@@ -90,6 +104,50 @@ export default function MahasiswaRiwayat() {
                         <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Menunggu Verifikasi</Badge>
                       )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak Surat" onClick={() => openPrint("peminjaman-alat", p.id)}>
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="phantom">
+          <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+            <Table>
+              <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+                <TableHead className="font-semibold">No. Peminjaman</TableHead>
+                <TableHead className="font-semibold">Laboratorium</TableHead>
+                <TableHead className="font-semibold">Phantom</TableHead>
+                <TableHead className="font-semibold">Tgl Pinjam</TableHead>
+                <TableHead className="font-semibold">Tgl Kembali</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold text-right">Aksi</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {l4 ? <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+                : !peminjamanPhantom?.length ? <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Belum ada riwayat peminjaman phantom</TableCell></TableRow>
+                : peminjamanPhantom.map((p: any) => (
+                  <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+                    <TableCell className="font-mono text-xs font-semibold text-primary">{p.noPeminjaman}</TableCell>
+                    <TableCell className="text-sm">{p.laboratorium?.nama || "-"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{p.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ") || "-"}</TableCell>
+                    <TableCell className="text-sm">{formatDate(p.tanggalPinjam)}</TableCell>
+                    <TableCell className="text-sm">{formatDate(p.tanggalKembali)}</TableCell>
+                    <TableCell><StatusBadge status={p.status} /></TableCell>
+                    <TableCell className="text-right space-x-1">
+                      {p.status === "dipinjam" && p.requestKembali !== "menunggu" && p.requestKembali !== "selesai" && (
+                        <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-orange-300 text-orange-700 hover:bg-orange-50 gap-1"
+                          disabled={requestKembaliPhantom.isPending} onClick={() => requestKembaliPhantom.mutate(p.id)}>
+                          <RotateCcw className="w-3 h-3" />Kembalikan
+                        </Button>
+                      )}
+                      {p.requestKembali === "menunggu" && (
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Menunggu Verifikasi</Badge>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak" onClick={() => openPrint("peminjaman-phantom", p.id)}>
                         <Printer className="w-4 h-4" />
                       </Button>
                     </TableCell>

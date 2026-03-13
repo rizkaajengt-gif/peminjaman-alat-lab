@@ -59,18 +59,25 @@ lib/
 ### Mahasiswa/Dosen
 - `/mahasiswa/peminjaman` - Form peminjaman alat
 - `/mahasiswa/ruangan` - Form peminjaman ruangan
+- `/mahasiswa/phantom` - Form peminjaman phantom (also accessible by PLP)
 - `/mahasiswa/permintaan` - Permintaan bahan (tujuan: plp atau gudang)
-- `/mahasiswa/riwayat` - Riwayat transaksi dengan tombol cetak
+- `/mahasiswa/riwayat` - Riwayat transaksi (alat, phantom, ruangan, bahan) dengan tombol cetak
 
 ### PLP
-- `/plp/verifikasi` - Verifikasi semua pengajuan
+- `/plp/verifikasi` - Verifikasi semua pengajuan (alat, phantom, ruangan, bahan, mahasiswa)
+- `/plp/pengembalian` - Riwayat & verifikasi pengembalian (alat, phantom, ruangan, bahan)
+- `/plp/inventaris` - Inventaris alat, bahan, phantom
 
 ### Gudang
 - `/gudang/manajemen` - Stok bahan & verifikasi permintaan bahan
 
+### Admin
+- `/admin/inventaris` - Inventaris alat, bahan, phantom
+
 ### Print Views (no sidebar)
 - `/print/permintaan-bahan/:id` - Surat permintaan bahan habis pakai (printable)
 - `/print/peminjaman-alat/:id` - Surat peminjaman alat laboratorium (printable)
+- `/print/peminjaman-phantom/:id` - Surat peminjaman phantom laboratorium (printable)
 
 ## Key API Endpoints
 
@@ -114,6 +121,9 @@ lib/
 - `peminjaman_ruangan` - Room booking transactions
 - `permintaan_bahan` - Material requests (tujuan: plp|gudang, plpId, catatan)
 - `permintaan_bahan_item` - Items per request
+- `phantom` - Phantom inventory (anatomy models, simulators, etc.)
+- `peminjaman_phantom` - Phantom borrowing transactions
+- `peminjaman_phantom_item` - Items per phantom borrowing
 - `berita` - News posts
 - `galeri` - Photo/video gallery
 - `dokumen` - Lab documents

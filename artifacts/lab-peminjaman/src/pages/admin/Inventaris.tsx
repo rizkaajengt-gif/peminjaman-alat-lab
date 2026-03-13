@@ -11,8 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, Pencil, Trash2, AlertTriangle, Upload, Download, ChevronLeft, ChevronRight, X, GraduationCap, FlaskConical, BarChart3 } from "lucide-react";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { Loader2, Plus, Search, Pencil, Trash2, AlertTriangle, Upload, Download, ChevronLeft, ChevronRight, X, GraduationCap, FlaskConical, BarChart3, Ghost } from "lucide-react";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 
 const PAGE_SIZE = 10;
 
@@ -25,14 +25,16 @@ const KONDISI_COLORS: Record<string, string> = {
 export default function AdminInventaris() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Inventaris" description="Kelola alat dan bahan habis pakai laboratorium." />
+      <PageHeader title="Inventaris" description="Kelola alat, bahan habis pakai, dan phantom laboratorium." />
       <Tabs defaultValue="alat">
         <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4">
-          <TabsTrigger value="alat" className="rounded-lg px-6 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white">Inventaris Alat</TabsTrigger>
-          <TabsTrigger value="bahan" className="rounded-lg px-6 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white">Bahan Habis Pakai</TabsTrigger>
+          <TabsTrigger value="alat" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white">Inventaris Alat</TabsTrigger>
+          <TabsTrigger value="bahan" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white">Bahan Habis Pakai</TabsTrigger>
+          <TabsTrigger value="phantom" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2"><Ghost className="w-4 h-4" />Phantom</TabsTrigger>
         </TabsList>
         <TabsContent value="alat"><AlatTab /></TabsContent>
         <TabsContent value="bahan"><BahanTab /></TabsContent>
+        <TabsContent value="phantom"><PhantomTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -565,6 +567,146 @@ function BahanTab() {
       </Dialog>
 
       <ImportCsvDialog open={showImport} onClose={() => setShowImport(false)} type="bahan" queryKey="/api/bahan" />
+    </>
+  );
+}
+
+function PhantomTab() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [showDialog, setShowDialog] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [form, setForm] = useState({ nama: "", kode: "", kondisi: "baik", stok: "1", satuan: "buah", deskripsi: "", laboratoriumId: "" });
+  const { data: labs } = useGetLaboratorium({});
+
+  const { data: list, isLoading } = useQuery({
+    queryKey: ["/api/phantom"],
+    queryFn: () => customFetch("/api/phantom"),
+    select: (d: any) => d as any[],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: any) => customFetch("/api/phantom", { method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } }),
+    onSuccess: () => { toast({ title: "Phantom ditambahkan" }); setShowDialog(false); qc.invalidateQueries({ queryKey: ["/api/phantom"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal menambah phantom" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => customFetch(`/api/phantom/${id}`, { method: "PUT", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } }),
+    onSuccess: () => { toast({ title: "Phantom diperbarui" }); setShowDialog(false); qc.invalidateQueries({ queryKey: ["/api/phantom"] }); },
+    onError: () => toast({ variant: "destructive", description: "Gagal memperbarui phantom" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => customFetch(`/api/phantom/${id}`, { method: "DELETE" }),
+    onSuccess: () => { toast({ title: "Phantom dihapus" }); qc.invalidateQueries({ queryKey: ["/api/phantom"] }); },
+    onError: () => toast({ variant: "destructive", description: "Tidak bisa hapus, mungkin sedang dipinjam" }),
+  });
+
+  const filtered = (list || []).filter((p: any) =>
+    p.nama?.toLowerCase().includes(search.toLowerCase()) || p.kode?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const openAdd = () => {
+    setEditItem(null);
+    setForm({ nama: "", kode: "", kondisi: "baik", stok: "1", satuan: "buah", deskripsi: "", laboratoriumId: "" });
+    setShowDialog(true);
+  };
+
+  const openEdit = (item: any) => {
+    setEditItem(item);
+    setForm({ nama: item.nama, kode: item.kode || "", kondisi: item.kondisi || "baik", stok: String(item.stok), satuan: item.satuan || "buah", deskripsi: item.deskripsi || "", laboratoriumId: item.laboratoriumId ? String(item.laboratoriumId) : "" });
+    setShowDialog(true);
+  };
+
+  const handleSave = () => {
+    const data = { nama: form.nama, kode: form.kode || null, kondisi: form.kondisi, stok: Number(form.stok), satuan: form.satuan, deskripsi: form.deskripsi || null, laboratoriumId: form.laboratoriumId ? Number(form.laboratoriumId) : null };
+    if (editItem) updateMutation.mutate({ id: editItem.id, data });
+    else createMutation.mutate(data);
+  };
+
+  return (
+    <>
+      <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-3 flex-wrap">
+          <Ghost className="text-primary w-5 h-5" />
+          <h3 className="font-semibold">Inventaris Phantom</h3>
+          <div className="relative flex-1 min-w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama / kode..." className="pl-9 rounded-xl h-9 bg-slate-50" />
+          </div>
+          <Button onClick={openAdd} className="rounded-xl h-9 gap-2 ml-auto"><Plus className="w-4 h-4" />Tambah Phantom</Button>
+        </div>
+        <Table>
+          <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+            <TableHead className="font-semibold">Kode</TableHead>
+            <TableHead className="font-semibold">Nama Phantom</TableHead>
+            <TableHead className="font-semibold">Kondisi</TableHead>
+            <TableHead className="font-semibold text-center">Stok</TableHead>
+            <TableHead className="font-semibold text-center">Tersedia</TableHead>
+            <TableHead className="font-semibold">Satuan</TableHead>
+            <TableHead className="font-semibold">Lab</TableHead>
+            <TableHead className="text-right font-semibold">Aksi</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={8} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+            : filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="h-32 text-center text-muted-foreground">Tidak ada data phantom</TableCell></TableRow>
+            : filtered.map((p: any) => (
+              <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableCell className="font-mono text-xs">{p.kode || "-"}</TableCell>
+                <TableCell className="font-medium">{p.nama}</TableCell>
+                <TableCell><Badge variant="outline" className={`text-xs ${KONDISI_COLORS[p.kondisi?.replace(" ", "_")] || "bg-slate-50 text-slate-600"}`}>{p.kondisi}</Badge></TableCell>
+                <TableCell className="text-center font-bold">{p.stok}</TableCell>
+                <TableCell className="text-center">{p.stokTersedia}</TableCell>
+                <TableCell className="text-sm">{p.satuan}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{p.laboratorium?.nama || "-"}</TableCell>
+                <TableCell className="text-right space-x-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => openEdit(p)}><Pencil className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => { if (confirm(`Hapus phantom "${p.nama}"?`)) deleteMutation.mutate(p.id); }}><Trash2 className="w-4 h-4" /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader><DialogTitle>{editItem ? "Edit Phantom" : "Tambah Phantom Baru"}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5 col-span-2"><Label>Nama Phantom *</Label><Input value={form.nama} onChange={e => setForm({ ...form, nama: e.target.value })} className="rounded-xl h-10" /></div>
+              <div className="space-y-1.5"><Label>Kode</Label><Input value={form.kode} onChange={e => setForm({ ...form, kode: e.target.value })} className="rounded-xl h-10" placeholder="PH-001" /></div>
+              <div className="space-y-1.5"><Label>Satuan</Label><Input value={form.satuan} onChange={e => setForm({ ...form, satuan: e.target.value })} className="rounded-xl h-10" placeholder="buah, set, unit" /></div>
+              <div className="space-y-1.5"><Label>Stok</Label><Input type="number" min="0" value={form.stok} onChange={e => setForm({ ...form, stok: e.target.value })} className="rounded-xl h-10" /></div>
+              <div className="space-y-1.5"><Label>Kondisi</Label>
+                <Select value={form.kondisi} onValueChange={v => setForm({ ...form, kondisi: v })}>
+                  <SelectTrigger className="rounded-xl h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baik">Baik</SelectItem>
+                    <SelectItem value="rusak ringan">Rusak Ringan</SelectItem>
+                    <SelectItem value="rusak berat">Rusak Berat</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 col-span-2"><Label>Laboratorium</Label>
+                <Select value={form.laboratoriumId} onValueChange={v => setForm({ ...form, laboratoriumId: v })}>
+                  <SelectTrigger className="rounded-xl h-10"><SelectValue placeholder="Pilih lab (opsional)..." /></SelectTrigger>
+                  <SelectContent>{(labs || []).map((l: any) => <SelectItem key={l.id} value={l.id.toString()}>{l.nama}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 col-span-2"><Label>Deskripsi</Label><Input value={form.deskripsi} onChange={e => setForm({ ...form, deskripsi: e.target.value })} className="rounded-xl h-10" /></div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)} className="rounded-xl">Batal</Button>
+            <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending || !form.nama} className="rounded-xl">
+              {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="animate-spin w-4 h-4" /> : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

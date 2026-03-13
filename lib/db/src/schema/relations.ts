@@ -5,7 +5,7 @@ import { laboratoriumTable } from "./laboratorium";
 import { alatTable } from "./alat";
 import { bahanTable } from "./bahan";
 import { plpLaboratoriumTable } from "./plp-laboratorium";
-import { peminjamanAlatTable, peminjamanAlatItemTable, peminjamanRuanganTable } from "./peminjaman";
+import { peminjamanAlatTable, peminjamanAlatItemTable, peminjamanRuanganTable, phantomTable, peminjamanPhantomTable, peminjamanPhantomItemTable } from "./peminjaman";
 import { permintaanBahanTable, permintaanBahanItemTable } from "./permintaan";
 import { beritaTable, galeriTable, dokumenTable } from "./konten";
 import { notifikasiTable } from "./notifikasi";
@@ -20,9 +20,11 @@ export const laboratoriumRelations = relations(laboratoriumTable, ({ one, many }
   jurusan: one(jurusanTable, { fields: [laboratoriumTable.jurusanId], references: [jurusanTable.id] }),
   alat: many(alatTable),
   bahan: many(bahanTable),
+  phantom: many(phantomTable),
   dokumen: many(dokumenTable),
   peminjamanAlat: many(peminjamanAlatTable),
   peminjamanRuangan: many(peminjamanRuanganTable),
+  peminjamanPhantom: many(peminjamanPhantomTable),
   permintaanBahan: many(permintaanBahanTable),
   plpAssignments: many(plpLaboratoriumTable),
 }));
@@ -32,6 +34,7 @@ export const usersRelations = relations(usersTable, ({ one, many }) => ({
   laboratorium: one(laboratoriumTable, { fields: [usersTable.laboratoriumId], references: [laboratoriumTable.id] }),
   peminjamanAlat: many(peminjamanAlatTable),
   peminjamanRuangan: many(peminjamanRuanganTable),
+  peminjamanPhantom: many(peminjamanPhantomTable),
   permintaanBahan: many(permintaanBahanTable),
   berita: many(beritaTable),
   galeri: many(galeriTable),
@@ -58,6 +61,11 @@ export const bahanRelations = relations(bahanTable, ({ one, many }) => ({
   permintaanItems: many(permintaanBahanItemTable),
 }));
 
+export const phantomRelations = relations(phantomTable, ({ one, many }) => ({
+  laboratorium: one(laboratoriumTable, { fields: [phantomTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  peminjamanItems: many(peminjamanPhantomItemTable),
+}));
+
 export const peminjamanAlatRelations = relations(peminjamanAlatTable, ({ one, many }) => ({
   user: one(usersTable, { fields: [peminjamanAlatTable.userId], references: [usersTable.id] }),
   laboratorium: one(laboratoriumTable, { fields: [peminjamanAlatTable.laboratoriumId], references: [laboratoriumTable.id] }),
@@ -72,6 +80,17 @@ export const peminjamanAlatItemRelations = relations(peminjamanAlatItemTable, ({
 export const peminjamanRuanganRelations = relations(peminjamanRuanganTable, ({ one }) => ({
   user: one(usersTable, { fields: [peminjamanRuanganTable.userId], references: [usersTable.id] }),
   laboratorium: one(laboratoriumTable, { fields: [peminjamanRuanganTable.laboratoriumId], references: [laboratoriumTable.id] }),
+}));
+
+export const peminjamanPhantomRelations = relations(peminjamanPhantomTable, ({ one, many }) => ({
+  user: one(usersTable, { fields: [peminjamanPhantomTable.userId], references: [usersTable.id] }),
+  laboratorium: one(laboratoriumTable, { fields: [peminjamanPhantomTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  items: many(peminjamanPhantomItemTable),
+}));
+
+export const peminjamanPhantomItemRelations = relations(peminjamanPhantomItemTable, ({ one }) => ({
+  peminjaman: one(peminjamanPhantomTable, { fields: [peminjamanPhantomItemTable.peminjamanId], references: [peminjamanPhantomTable.id] }),
+  phantom: one(phantomTable, { fields: [peminjamanPhantomItemTable.phantomId], references: [phantomTable.id] }),
 }));
 
 export const permintaanBahanRelations = relations(permintaanBahanTable, ({ one, many }) => ({
