@@ -51,6 +51,8 @@ export default function PrintPeminjamanPhantom() {
 
   const user = d.user as any;
   const nimNip = user?.nim || user?.nip || null;
+  const plp = d.verifikator as any;
+  const plpNip = plp?.nip || plp?.nim || null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -161,7 +163,7 @@ export default function PrintPeminjamanPhantom() {
         {/* TTD 2 kolom */}
         <div className="grid grid-cols-2 gap-8 mt-6">
           <TTDBox label="Peminjam" nama={user?.nama} nimNip={nimNip} tandaTangan={user?.tandaTangan} />
-          <TTDBox label="PLP / Pengelola Lab" nama="" nimNip={null} tandaTangan={null} />
+          <TTDBox label="PLP / Pengelola Lab" nama={plp?.nama} nimNip={plpNip} tandaTangan={plp?.tandaTangan} />
         </div>
 
         <p className="text-center text-[10px] text-slate-400 mt-4">

@@ -397,6 +397,12 @@ function VerifikasiPengembalianPhantomTab() {
                 <TableCell>
                   <div className="font-medium text-sm">{p.user?.nama}</div>
                   <div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div>
+                  {p.user?.noWa && (
+                    <a href={`https://wa.me/${p.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium mt-0.5">
+                      <MessageCircle className="w-3 h-3" />{p.user.noWa}
+                    </a>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{p.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ")}</TableCell>
                 <TableCell className="text-sm">{fmt(p.tanggalKembali)}</TableCell>
@@ -418,6 +424,16 @@ function VerifikasiPengembalianPhantomTab() {
               <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Peminjam</span><span className="font-bold">{selected.user?.nama}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Phantom</span><span className="text-right max-w-xs text-xs">{selected.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ")}</span></div>
+                {selected.user?.noWa && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">WhatsApp</span>
+                    <a href={`https://wa.me/${selected.user.noWa.replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user.nama}, tolong segera kembalikan phantom yang Anda pinjam (No. ${selected.noPeminjaman}). Terima kasih.`)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg px-2.5 py-1 font-medium transition-colors">
+                      <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
+                    </a>
+                  </div>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="font-semibold">Kondisi Phantom Dikembalikan *</Label>
@@ -481,7 +497,16 @@ function RiwayatPhantomTab() {
           : data.map((p: any) => (
             <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
               <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
-              <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div></TableCell>
+              <TableCell>
+                <div className="font-medium text-sm">{p.user?.nama}</div>
+                <div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div>
+                {p.user?.noWa && (
+                  <a href={`https://wa.me/${p.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium mt-0.5">
+                    <MessageCircle className="w-3 h-3" />{p.user.noWa}
+                  </a>
+                )}
+              </TableCell>
               <TableCell className="text-sm">{p.laboratorium?.nama || "-"}</TableCell>
               <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{p.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ")}</TableCell>
               <TableCell className="text-sm">{fmt(p.tanggalPinjam)}</TableCell>

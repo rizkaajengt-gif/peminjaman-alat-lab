@@ -78,7 +78,7 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
   try {
     const item = await db.query.peminjamanPhantomTable.findFirst({
       where: eq(peminjamanPhantomTable.id, Number(req.params.id)),
-      with: { user: { with: { jurusan: true } }, laboratorium: true, items: { with: { phantom: true } } },
+      with: { user: { with: { jurusan: true } }, laboratorium: true, items: { with: { phantom: true } }, verifikator: true },
     });
     if (!item) { res.status(404).json({ message: "Data tidak ditemukan" }); return; }
     res.json(item);

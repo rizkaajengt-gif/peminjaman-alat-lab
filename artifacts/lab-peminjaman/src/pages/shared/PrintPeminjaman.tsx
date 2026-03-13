@@ -44,6 +44,8 @@ export default function PrintPeminjaman() {
 
   const user = data.user as any;
   const nimNip = user?.nim || user?.nip || null;
+  const plp = (data as any).verifikator as any;
+  const plpNip = plp?.nip || plp?.nim || null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -161,9 +163,9 @@ export default function PrintPeminjaman() {
           />
           <TTDBox
             label="PLP / Pengelola Lab"
-            nama=""
-            nimNip={null}
-            tandaTangan={null}
+            nama={plp?.nama}
+            nimNip={plpNip}
+            tandaTangan={plp?.tandaTangan}
           />
         </div>
 

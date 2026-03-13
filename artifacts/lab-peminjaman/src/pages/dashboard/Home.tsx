@@ -1,9 +1,11 @@
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "wouter";
-import { Loader2, Users, Package, Clock, ShieldAlert, CalendarCheck, FlaskConical, ClipboardList, BookOpenCheck, Warehouse, BarChart3, Database, Building2, GraduationCap } from "lucide-react";
-import { useGetStatistik } from "@workspace/api-client-react";
+import { Loader2, Users, Package, Clock, ShieldAlert, CalendarCheck, FlaskConical, ClipboardList, BookOpenCheck, Warehouse, BarChart3, Database, Building2, GraduationCap, AlertCircle, RotateCcw } from "lucide-react";
+import { useGetStatistik, customFetch } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 
 export default function DashboardHome() {
   const { user } = useAuth();
@@ -115,6 +117,67 @@ function AdminDashboard() {
   );
 }
 
+function ActiveBorrowingsWidget() {
+  const { data: alatData } = useQuery<any[]>({
+    queryKey: ["/api/peminjaman-alat", { status: "dipinjam" }],
+    queryFn: () => customFetch("/api/peminjaman-alat?status=dipinjam"),
+    select: (d: any) => d as any[],
+  });
+  const { data: phantomData } = useQuery<any[]>({
+    queryKey: ["/api/peminjaman-phantom", { status: "dipinjam" }],
+    queryFn: () => customFetch("/api/peminjaman-phantom?status=dipinjam"),
+    select: (d: any) => d as any[],
+  });
+
+  const totalAlat = alatData?.length ?? 0;
+  const totalPhantom = phantomData?.length ?? 0;
+  const total = totalAlat + totalPhantom;
+
+  if (total === 0) return null;
+
+  return (
+    <Card className="border-none shadow-lg shadow-amber-100 rounded-2xl overflow-hidden bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-l-amber-400">
+      <div className="p-5 flex items-start gap-4">
+        <div className="p-3 bg-amber-100 rounded-xl mt-0.5">
+          <AlertCircle className="w-6 h-6 text-amber-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h3 className="font-bold text-amber-900">Peminjaman Aktif</h3>
+            <Badge className="bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-100">{total} item dipinjam</Badge>
+          </div>
+          <p className="text-sm text-amber-700 mb-3">
+            Anda sedang meminjam {totalAlat > 0 ? `${totalAlat} alat lab` : ""}
+            {totalAlat > 0 && totalPhantom > 0 ? " dan " : ""}
+            {totalPhantom > 0 ? `${totalPhantom} phantom` : ""}. Pastikan dikembalikan tepat waktu.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {alatData?.map((p: any) => (
+              <div key={p.id} className="flex items-center gap-1.5 text-xs bg-white/80 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                <span className="font-mono font-bold text-primary text-[10px]">{p.noPeminjaman}</span>
+                <span className="text-slate-500">·</span>
+                <span className="text-amber-700">{p.items?.slice(0,1).map((i:any) => i.alat?.nama).join("")}{p.items?.length > 1 ? ` +${p.items.length-1}` : ""}</span>
+              </div>
+            ))}
+            {phantomData?.map((p: any) => (
+              <div key={p.id} className="flex items-center gap-1.5 text-xs bg-white/80 border border-orange-200 rounded-lg px-2.5 py-1.5">
+                <span className="font-mono font-bold text-primary text-[10px]">{p.noPeminjaman}</span>
+                <span className="text-slate-500">·</span>
+                <span className="text-orange-700">{p.items?.slice(0,1).map((i:any) => i.phantom?.nama).join("")}{p.items?.length > 1 ? ` +${p.items.length-1}` : ""}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <Link href="/mahasiswa/riwayat">
+          <Button size="sm" className="rounded-xl gap-1.5 bg-amber-600 hover:bg-amber-700 whitespace-nowrap shrink-0">
+            <RotateCcw className="w-3.5 h-3.5" />Ajukan Kembalikan
+          </Button>
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
 function MahasiswaDashboard() {
   const { user } = useAuth();
   const role = user?.role;
@@ -128,6 +191,8 @@ function MahasiswaDashboard() {
         </div>
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-white/10 skew-x-12 translate-x-12 blur-3xl pointer-events-none"></div>
       </div>
+
+      <ActiveBorrowingsWidget />
 
       <div>
         <h2 className="text-lg font-bold mb-4">Layanan Tersedia</h2>

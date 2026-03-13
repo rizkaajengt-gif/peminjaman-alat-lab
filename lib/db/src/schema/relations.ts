@@ -69,6 +69,7 @@ export const phantomRelations = relations(phantomTable, ({ one, many }) => ({
 export const peminjamanAlatRelations = relations(peminjamanAlatTable, ({ one, many }) => ({
   user: one(usersTable, { fields: [peminjamanAlatTable.userId], references: [usersTable.id] }),
   laboratorium: one(laboratoriumTable, { fields: [peminjamanAlatTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  verifikator: one(usersTable, { fields: [peminjamanAlatTable.verifikasiOleh], references: [usersTable.id] }),
   items: many(peminjamanAlatItemTable),
 }));
 
@@ -85,6 +86,7 @@ export const peminjamanRuanganRelations = relations(peminjamanRuanganTable, ({ o
 export const peminjamanPhantomRelations = relations(peminjamanPhantomTable, ({ one, many }) => ({
   user: one(usersTable, { fields: [peminjamanPhantomTable.userId], references: [usersTable.id] }),
   laboratorium: one(laboratoriumTable, { fields: [peminjamanPhantomTable.laboratoriumId], references: [laboratoriumTable.id] }),
+  verifikator: one(usersTable, { fields: [peminjamanPhantomTable.verifikasiOleh], references: [usersTable.id] }),
   items: many(peminjamanPhantomItemTable),
 }));
 
