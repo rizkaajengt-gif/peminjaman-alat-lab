@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { useGetAlat, useCreateAlat, useUpdateAlat, useDeleteAlat, useGetBahan, useCreateBahan, useUpdateBahan, useDeleteBahan, useGetLaboratorium, customFetch } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,19 @@ import { Loader2, Plus, Search, Pencil, Trash2, AlertTriangle, Upload, Download,
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 
 const PAGE_SIZE = 10;
+
+function usePlpLabFilter() {
+  const { user } = useAuth();
+  const isPlp = user?.role === "plp";
+  const { data: plpLabs } = useQuery<any[]>({
+    queryKey: ["/api/plp-laboratorium", user?.id],
+    queryFn: () => customFetch(`/api/plp-laboratorium?plpId=${user!.id}`),
+    enabled: isPlp && !!user?.id,
+    select: (d: any) => d as any[],
+  });
+  const plpLabIds: number[] = isPlp ? (plpLabs || []).map((a: any) => a.laboratoriumId) : [];
+  return { isPlp, plpLabIds };
+}
 
 const KONDISI_COLORS: Record<string, string> = {
   baik: "bg-green-100 text-green-700 border-green-200",
@@ -220,6 +234,7 @@ function StokSummaryCards({ items, getJurusanNama }: { items: any[]; getJurusanN
 function AlatTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { isPlp, plpLabIds } = usePlpLabFilter();
   const [search, setSearch] = useState("");
   const [filterJurusan, setFilterJurusan] = useState("");
   const [filterLab, setFilterLab] = useState("");
@@ -228,9 +243,11 @@ function AlatTab() {
   const [editItem, setEditItem] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
   const [page, setPage] = useState(1);
-  const { data: labs } = useGetLaboratorium({});
+  const { data: labsAll } = useGetLaboratorium({});
+  const labs = useMemo(() => isPlp && plpLabIds.length > 0 ? (labsAll || []).filter((l: any) => plpLabIds.includes(l.id)) : (labsAll || []), [labsAll, isPlp, plpLabIds]);
   const { data: jurusanList } = useQuery<any[]>({ queryKey: ["/api/jurusan"], queryFn: () => customFetch("/api/jurusan") });
-  const { data: alat, isLoading } = useGetAlat({ search });
+  const { data: alatAll, isLoading } = useGetAlat({ search });
+  const alat = useMemo(() => isPlp && plpLabIds.length > 0 ? (alatAll || []).filter((a: any) => plpLabIds.includes(a.laboratoriumId)) : (alatAll || []), [alatAll, isPlp, plpLabIds]);
   const createMutation = useCreateAlat();
   const updateMutation = useUpdateAlat();
   const deleteMutation = useDeleteAlat();
@@ -245,7 +262,7 @@ function AlatTab() {
 
   const filteredLabs = useMemo(() => (labs || []).filter((l: any) => !filterJurusan || String(l.jurusanId) === filterJurusan || l.jurusan?.id?.toString() === filterJurusan), [labs, filterJurusan]);
 
-  const filtered = useMemo(() => (alat || []).filter(a => {
+  const filtered = useMemo(() => (alat || []).filter((a: any) => {
     if (filterLab && String(a.laboratoriumId) !== filterLab) return false;
     if (filterJurusan && jurusanMap[a.laboratoriumId] !== (jurusanList || []).find((j: any) => j.id.toString() === filterJurusan)?.nama) return false;
     if (filterKondisi && a.kondisi !== filterKondisi) return false;
@@ -395,6 +412,7 @@ function AlatTab() {
 function BahanTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { isPlp, plpLabIds } = usePlpLabFilter();
   const [search, setSearch] = useState("");
   const [filterJurusan, setFilterJurusan] = useState("");
   const [filterLab, setFilterLab] = useState("");
@@ -403,9 +421,11 @@ function BahanTab() {
   const [editItem, setEditItem] = useState<any>(null);
   const [showImport, setShowImport] = useState(false);
   const [page, setPage] = useState(1);
-  const { data: labs } = useGetLaboratorium({});
+  const { data: labsAll } = useGetLaboratorium({});
+  const labs = useMemo(() => isPlp && plpLabIds.length > 0 ? (labsAll || []).filter((l: any) => plpLabIds.includes(l.id)) : (labsAll || []), [labsAll, isPlp, plpLabIds]);
   const { data: jurusanList } = useQuery<any[]>({ queryKey: ["/api/jurusan"], queryFn: () => customFetch("/api/jurusan") });
-  const { data: bahan, isLoading } = useGetBahan({ search });
+  const { data: bahanAll, isLoading } = useGetBahan({ search });
+  const bahan = useMemo(() => isPlp && plpLabIds.length > 0 ? (bahanAll || []).filter((b: any) => plpLabIds.includes(b.laboratoriumId)) : (bahanAll || []), [bahanAll, isPlp, plpLabIds]);
   const createMutation = useCreateBahan();
   const updateMutation = useUpdateBahan();
   const deleteMutation = useDeleteBahan();
@@ -420,7 +440,7 @@ function BahanTab() {
 
   const filteredLabs = useMemo(() => (labs || []).filter((l: any) => !filterJurusan || l.jurusan?.id?.toString() === filterJurusan), [labs, filterJurusan]);
 
-  const filtered = useMemo(() => (bahan || []).filter(b => {
+  const filtered = useMemo(() => (bahan || []).filter((b: any) => {
     if (filterLab && String(b.laboratoriumId) !== filterLab) return false;
     if (filterJurusan && (jurusanList || []).find((j: any) => j.id.toString() === filterJurusan)?.nama !== jurusanMap[b.laboratoriumId]) return false;
     if (filterStok === "rendah" && b.stok > b.stokMinimal) return false;
@@ -574,17 +594,20 @@ function BahanTab() {
 function PhantomTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { isPlp, plpLabIds } = usePlpLabFilter();
   const [search, setSearch] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [form, setForm] = useState({ nama: "", kode: "", kondisi: "baik", stok: "1", satuan: "buah", deskripsi: "", laboratoriumId: "" });
-  const { data: labs } = useGetLaboratorium({});
+  const { data: labsAll } = useGetLaboratorium({});
+  const labs = useMemo(() => isPlp && plpLabIds.length > 0 ? (labsAll || []).filter((l: any) => plpLabIds.includes(l.id)) : (labsAll || []), [labsAll, isPlp, plpLabIds]);
 
-  const { data: list, isLoading } = useQuery({
+  const { data: listAll, isLoading } = useQuery({
     queryKey: ["/api/phantom"],
     queryFn: () => customFetch("/api/phantom"),
     select: (d: any) => d as any[],
   });
+  const list = useMemo(() => isPlp && plpLabIds.length > 0 ? (listAll || []).filter((p: any) => plpLabIds.includes(p.laboratoriumId)) : (listAll || []), [listAll, isPlp, plpLabIds]);
 
   const createMutation = useMutation({
     mutationFn: (data: any) => customFetch("/api/phantom", { method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } }),

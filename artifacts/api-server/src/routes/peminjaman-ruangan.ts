@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db, peminjamanRuanganTable, usersTable } from "@workspace/db";
-import { eq, and, SQL } from "drizzle-orm";
+import { eq, and, inArray, SQL } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
+import { getPlpLabIds } from "../lib/plp-labs.js";
 import { kirimNotifWa, formatPesanPeminjamanRuangan } from "../lib/notifikasi.js";
 
 const router = Router();
@@ -21,6 +22,12 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
 
     if (req.user!.role === "mahasiswa" || req.user!.role === "dosen") {
       conditions.push(eq(peminjamanRuanganTable.userId, req.user!.id));
+    } else if (req.user!.role === "plp") {
+      const labIds = await getPlpLabIds(req.user!.id);
+      if (labIds.length > 0) {
+        conditions.push(inArray(peminjamanRuanganTable.laboratoriumId, labIds));
+      }
+      if (userId) conditions.push(eq(peminjamanRuanganTable.userId, Number(userId)));
     } else if (userId) {
       conditions.push(eq(peminjamanRuanganTable.userId, Number(userId)));
     }
