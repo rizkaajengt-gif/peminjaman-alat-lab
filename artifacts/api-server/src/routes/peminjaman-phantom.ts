@@ -44,7 +44,7 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
 
 router.post("/", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { laboratoriumId, tanggalPinjam, jamPinjam, tanggalKembali, jamKembali, keperluan, items } = req.body;
+    const { laboratoriumId, tanggalPinjam, jamPinjam, tanggalKembali, jamKembali, keperluan, kategori, items } = req.body;
     if (!tanggalPinjam || !tanggalKembali || !keperluan || !items?.length) {
       res.status(400).json({ message: "Data tidak lengkap" }); return;
     }
@@ -55,7 +55,7 @@ router.post("/", requireAuth, async (req: AuthRequest, res) => {
       laboratoriumId: laboratoriumId || null,
       tanggalPinjam, jamPinjam: jamPinjam || null,
       tanggalKembali, jamKembali: jamKembali || null,
-      keperluan, status: "menunggu",
+      keperluan, kategori: kategori || "pembelajaran", status: "menunggu",
     }).returning();
 
     for (const item of items) {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { LogbookCard } from "@/pages/shared/LogbookCard";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -284,6 +285,8 @@ export default function PlpLaporan() {
           </Button>
         </div>
       </Card>
+
+      <LogbookCard labs={myLabs} />
     </div>
   );
 }

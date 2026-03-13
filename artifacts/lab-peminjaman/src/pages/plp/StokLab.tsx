@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useGetBahan, useUpdateBahan } from "@workspace/api-client-react";
+import { useState, useMemo } from "react";
+import { useGetBahan, useGetAlat, useUpdateBahan } from "@workspace/api-client-react";
 import { customFetch } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { StatusBadge } from "@/components/ui-custom/StatusBadge";
@@ -14,11 +14,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Package, ArrowDownToLine, AlertTriangle, History } from "lucide-react";
+import { Loader2, Package, ArrowDownToLine, AlertTriangle, History, Wrench, Ghost } from "lucide-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+
+function usePlpLabIds() {
+  const { user } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["/api/plp-laboratorium", user?.id],
+    queryFn: () => customFetch(`/api/plp-laboratorium?plpId=${user!.id}`),
+    enabled: !!user?.id,
+    select: (d: any) => (d as any[]).map((a: any) => a.laboratoriumId as number),
+  });
+  return data || [];
+}
 
 function fmt(d: string | undefined) {
   if (!d) return "-";
@@ -26,23 +37,30 @@ function fmt(d: string | undefined) {
 }
 
 export default function PlpStokLab() {
-  const { user } = useAuth();
   return (
     <div className="space-y-6">
-      <PageHeader title="Manajemen Stok Lab" description="Kelola stok bahan di laboratorium Anda dan ajukan permintaan ke gudang jika stok menipis." />
-      <Tabs defaultValue="stok">
-        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4">
-          <TabsTrigger value="stok" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
-            <Package className="w-4 h-4" />Stok Lab Saya
+      <PageHeader title="Inventaris & Stok Lab" description="Alat, bahan, dan phantom di laboratorium yang Anda tangani." />
+      <Tabs defaultValue="bahan">
+        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl h-auto mb-4 flex-wrap">
+          <TabsTrigger value="alat" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+            <Wrench className="w-4 h-4" />Alat Lab
           </TabsTrigger>
-          <TabsTrigger value="transfer" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
-            <ArrowDownToLine className="w-4 h-4" />Minta Stok ke Gudang
+          <TabsTrigger value="bahan" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+            <Package className="w-4 h-4" />Bahan Lab
           </TabsTrigger>
-          <TabsTrigger value="riwayat-transfer" className="rounded-lg px-5 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-2">
+          <TabsTrigger value="phantom" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+            <Ghost className="w-4 h-4" />Phantom
+          </TabsTrigger>
+          <TabsTrigger value="transfer" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
+            <ArrowDownToLine className="w-4 h-4" />Minta Stok Gudang
+          </TabsTrigger>
+          <TabsTrigger value="riwayat-transfer" className="rounded-lg px-4 py-2 font-medium data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5">
             <History className="w-4 h-4" />Riwayat Permintaan
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="stok"><StokLabTab /></TabsContent>
+        <TabsContent value="alat"><AlatLabTab /></TabsContent>
+        <TabsContent value="bahan"><StokLabTab /></TabsContent>
+        <TabsContent value="phantom"><PhantomLabTab /></TabsContent>
         <TabsContent value="transfer"><MintaStokTab /></TabsContent>
         <TabsContent value="riwayat-transfer"><RiwayatTransferTab /></TabsContent>
       </Tabs>
@@ -50,8 +68,110 @@ export default function PlpStokLab() {
   );
 }
 
+function AlatLabTab() {
+  const labIds = usePlpLabIds();
+  const { data: alat, isLoading } = useGetAlat({});
+  const filtered = useMemo(() => (alat || []).filter((a: any) => labIds.length === 0 || labIds.includes(a.laboratoriumId)), [alat, labIds]);
+
+  return (
+    <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex items-center gap-2">
+        <Wrench className="text-primary w-5 h-5" />
+        <h3 className="font-semibold">Alat di Lab Saya</h3>
+        <Badge variant="outline" className="ml-auto bg-slate-50 text-slate-600">{filtered.length} item</Badge>
+      </div>
+      <Table>
+        <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+          <TableHead className="font-semibold">Kode</TableHead>
+          <TableHead className="font-semibold">Nama Alat</TableHead>
+          <TableHead className="font-semibold">Lab</TableHead>
+          <TableHead className="font-semibold text-center">Stok Total</TableHead>
+          <TableHead className="font-semibold text-center">Stok Tersedia</TableHead>
+          <TableHead className="font-semibold">Kondisi</TableHead>
+          <TableHead className="font-semibold">Satuan</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {isLoading ? <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+          : filtered.length === 0 ? <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">{labIds.length === 0 ? "Belum ada lab yang ditugaskan" : "Tidak ada alat di lab Anda"}</TableCell></TableRow>
+          : filtered.map((a: any) => (
+            <TableRow key={a.id} className="hover:bg-slate-50/50 border-slate-50">
+              <TableCell className="font-mono text-xs">{a.kode}</TableCell>
+              <TableCell className="font-semibold">{a.nama}</TableCell>
+              <TableCell className="text-sm">{a.laboratorium?.nama}</TableCell>
+              <TableCell className="text-center font-bold text-primary">{a.stok}</TableCell>
+              <TableCell className="text-center">
+                <span className={`font-bold ${a.stokTersedia < 1 ? "text-red-600" : "text-teal-600"}`}>{a.stokTersedia}</span>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className={`text-xs ${{ baik: "bg-green-50 text-green-700 border-green-200", rusak_ringan: "bg-yellow-50 text-yellow-700 border-yellow-200", rusak_berat: "bg-red-50 text-red-700 border-red-200" }[a.kondisi] || ""}`}>
+                  {a.kondisi?.replace("_", " ") || "-"}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">{a.satuan}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
+
+function PhantomLabTab() {
+  const labIds = usePlpLabIds();
+  const { data: phantomData, isLoading } = useQuery({
+    queryKey: ["/api/phantom"],
+    queryFn: () => customFetch("/api/phantom"),
+    select: (d: any) => d as any[],
+  });
+  const filtered = useMemo(() => (phantomData || []).filter((p: any) => labIds.length === 0 || labIds.includes(p.laboratoriumId)), [phantomData, labIds]);
+
+  return (
+    <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex items-center gap-2">
+        <Ghost className="text-primary w-5 h-5" />
+        <h3 className="font-semibold">Phantom di Lab Saya</h3>
+        <Badge variant="outline" className="ml-auto bg-slate-50 text-slate-600">{filtered.length} item</Badge>
+      </div>
+      <Table>
+        <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
+          <TableHead className="font-semibold">Kode</TableHead>
+          <TableHead className="font-semibold">Nama Phantom</TableHead>
+          <TableHead className="font-semibold">Lab</TableHead>
+          <TableHead className="font-semibold text-center">Stok Total</TableHead>
+          <TableHead className="font-semibold text-center">Stok Tersedia</TableHead>
+          <TableHead className="font-semibold">Kondisi</TableHead>
+          <TableHead className="font-semibold">Satuan</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {isLoading ? <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+          : filtered.length === 0 ? <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">{labIds.length === 0 ? "Belum ada lab yang ditugaskan" : "Tidak ada phantom di lab Anda"}</TableCell></TableRow>
+          : filtered.map((p: any) => (
+            <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+              <TableCell className="font-mono text-xs">{p.kode}</TableCell>
+              <TableCell className="font-semibold">{p.nama}</TableCell>
+              <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
+              <TableCell className="text-center font-bold text-primary">{p.stok}</TableCell>
+              <TableCell className="text-center">
+                <span className={`font-bold ${p.stokTersedia < 1 ? "text-red-600" : "text-teal-600"}`}>{p.stokTersedia}</span>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className={`text-xs ${{ baik: "bg-green-50 text-green-700 border-green-200", rusak_ringan: "bg-yellow-50 text-yellow-700 border-yellow-200", rusak_berat: "bg-red-50 text-red-700 border-red-200" }[p.kondisi] || ""}`}>
+                  {p.kondisi?.replace("_", " ") || "-"}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">{p.satuan}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
+
 function StokLabTab() {
-  const { data: bahan, isLoading } = useGetBahan({});
+  const labIds = usePlpLabIds();
+  const { data: bahanAll, isLoading } = useGetBahan({});
+  const bahan = useMemo(() => (bahanAll || []).filter((b: any) => labIds.length === 0 || labIds.includes(b.laboratoriumId)), [bahanAll, labIds]);
   const lowStock = bahan?.filter(b => b.stok <= b.stokMinimal) || [];
 
   return (

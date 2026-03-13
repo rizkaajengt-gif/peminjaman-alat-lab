@@ -10,11 +10,19 @@ import { Label } from "@/components/ui/label";
 import { useGetLaboratorium, customFetch } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
-import { Loader2, Trash2, Clock } from "lucide-react";
+import { Loader2, Trash2, Clock, BookOpen, FlaskConical, Heart, Building2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+const KATEGORI_PHANTOM = [
+  { value: "pembelajaran", label: "Pembelajaran / Praktikum", desc: "Kegiatan belajar mengajar & skill lab", icon: BookOpen, color: "border-blue-200 bg-blue-50", activeColor: "border-blue-500 bg-blue-50", iconColor: "text-blue-600" },
+  { value: "penelitian",   label: "Penelitian",               desc: "Penelitian ilmiah / skripsi / KTI",   icon: FlaskConical, color: "border-teal-200 bg-teal-50", activeColor: "border-teal-500 bg-teal-50", iconColor: "text-teal-600" },
+  { value: "pengabdian_masyarakat", label: "Pengabdian Masyarakat", desc: "Kegiatan pengabdian masyarakat", icon: Heart, color: "border-rose-200 bg-rose-50", activeColor: "border-rose-500 bg-rose-50", iconColor: "text-rose-600" },
+  { value: "sewa_eksternal", label: "Sewa Eksternal", desc: "Penggunaan oleh pihak luar / instansi eksternal", icon: Building2, color: "border-amber-200 bg-amber-50", activeColor: "border-amber-500 bg-amber-50", iconColor: "text-amber-600" },
+] as const;
 
 const formSchema = z.object({
   laboratoriumId: z.coerce.number().optional(),
+  kategori: z.enum(["pembelajaran", "penelitian", "pengabdian_masyarakat", "sewa_eksternal"]),
   tanggalPinjam: z.string().min(1, "Pilih tanggal"),
   jamPinjam: z.string().optional(),
   tanggalKembali: z.string().min(1, "Pilih tanggal"),
@@ -55,8 +63,10 @@ export default function PeminjamanPhantom() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { keperluan: "" },
+    defaultValues: { keperluan: "", kategori: "pembelajaran" },
   });
+
+  const kategori = form.watch("kategori");
 
   const availablePhantom = selectedLab
     ? (phantomList || []).filter((p: any) => !items.find(i => i.phantomId === p.id))
@@ -78,6 +88,27 @@ export default function PeminjamanPhantom() {
       />
       <Card className="p-6 md:p-8 rounded-3xl border-none shadow-xl shadow-slate-100 bg-white">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Kategori Penggunaan */}
+          <div className="space-y-2">
+            <Label className="font-semibold text-slate-700">Kategori Penggunaan</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {KATEGORI_PHANTOM.map(kat => {
+                const Icon = kat.icon;
+                const active = kategori === kat.value;
+                return (
+                  <button key={kat.value} type="button"
+                    onClick={() => form.setValue("kategori", kat.value as any)}
+                    className={`relative flex flex-col items-start p-3 rounded-2xl border-2 text-left cursor-pointer transition-all ${active ? kat.activeColor + " border-opacity-100 shadow-sm" : kat.color + " border-opacity-60 hover:border-opacity-100"}`}>
+                    <Icon className={`w-5 h-5 mb-1.5 ${kat.iconColor}`} />
+                    <div className="text-sm font-semibold text-slate-800 leading-tight">{kat.label}</div>
+                    <div className="text-xs text-slate-500 mt-0.5 leading-tight">{kat.desc}</div>
+                    {active && <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${kat.iconColor.replace("text-", "bg-")}`} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="font-semibold text-slate-700">Laboratorium (Opsional)</Label>

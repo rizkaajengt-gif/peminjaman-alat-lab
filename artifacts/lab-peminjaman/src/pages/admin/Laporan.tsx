@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGetStatistik, useGetLaporanPeminjaman, useGetLaboratorium } from "@workspace/api-client-react";
+import { LogbookCard } from "@/pages/shared/LogbookCard";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -287,6 +288,8 @@ export default function AdminLaporan() {
           ))}
         </div>
       </Card>
+
+      <LogbookCard labs={labs || []} />
     </div>
   );
 }

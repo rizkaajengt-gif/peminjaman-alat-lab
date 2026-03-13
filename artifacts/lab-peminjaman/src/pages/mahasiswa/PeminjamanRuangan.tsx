@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, BookOpen, FlaskConical, Heart } from "lucide-react";
+import { Loader2, CheckCircle, BookOpen, FlaskConical, Heart, Building2 } from "lucide-react";
 
 const schema = z.object({
   laboratoriumId: z.coerce.number().min(1, "Pilih ruangan"),
-  kategori: z.enum(["pembelajaran", "penelitian", "pengabdian_masyarakat"]),
+  kategori: z.enum(["pembelajaran", "penelitian", "pengabdian_masyarakat", "sewa_eksternal"]),
   judulKegiatan: z.string().optional(),
   tanggalMulai: z.string().min(1, "Pilih tanggal"),
   tanggalSelesai: z.string().min(1, "Pilih tanggal"),
@@ -59,6 +59,17 @@ const KATEGORI = [
     iconColor: "text-rose-600",
     placeholder: "Contoh: Penyuluhan Gizi dan Pemeriksaan Kesehatan Gratis",
     fieldLabel: "Judul Kegiatan Pengabdian",
+  },
+  {
+    value: "sewa_eksternal",
+    label: "Sewa Eksternal",
+    desc: "Penggunaan oleh pihak luar / instansi eksternal",
+    icon: Building2,
+    color: "border-amber-300 bg-amber-50",
+    activeColor: "border-amber-500 bg-amber-50",
+    iconColor: "text-amber-600",
+    placeholder: "Contoh: Pelatihan Klinik dari RS Umum Tasikmalaya",
+    fieldLabel: "Nama Instansi / Kegiatan",
   },
 ] as const;
 

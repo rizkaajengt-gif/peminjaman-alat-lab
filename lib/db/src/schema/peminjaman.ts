@@ -7,7 +7,8 @@ import { alatTable } from "./alat";
 
 export const statusPeminjamanEnum = pgEnum("status_peminjaman", ["menunggu", "disetujui", "ditolak", "dipinjam", "dikembalikan"]);
 export const statusRuanganEnum = pgEnum("status_ruangan", ["menunggu", "disetujui", "ditolak", "selesai"]);
-export const kategoriRuanganEnum = pgEnum("kategori_ruangan", ["pembelajaran", "penelitian", "pengabdian_masyarakat"]);
+export const kategoriRuanganEnum = pgEnum("kategori_ruangan", ["pembelajaran", "penelitian", "pengabdian_masyarakat", "sewa_eksternal"]);
+export const kategoriPeminjamanEnum = pgEnum("kategori_peminjaman", ["pembelajaran", "penelitian", "pengabdian_masyarakat", "sewa_eksternal"]);
 
 export const peminjamanAlatTable = pgTable("peminjaman_alat", {
   id: serial("id").primaryKey(),
@@ -20,6 +21,7 @@ export const peminjamanAlatTable = pgTable("peminjaman_alat", {
   jamKembali: text("jam_kembali"),
   tanggalDikembalikan: date("tanggal_dikembalikan"),
   keperluan: text("keperluan").notNull(),
+  kategori: kategoriPeminjamanEnum("kategori").notNull().default("pembelajaran"),
   status: statusPeminjamanEnum("status").notNull().default("menunggu"),
   catatanPlp: text("catatan_plp"),
   verifikasiOleh: integer("verifikasi_oleh").references(() => usersTable.id),
@@ -83,6 +85,7 @@ export const peminjamanPhantomTable = pgTable("peminjaman_phantom", {
   jamKembali: text("jam_kembali"),
   tanggalDikembalikan: date("tanggal_dikembalikan"),
   keperluan: text("keperluan").notNull(),
+  kategori: kategoriPeminjamanEnum("kategori").notNull().default("pembelajaran"),
   status: statusPeminjamanEnum("status").notNull().default("menunggu"),
   catatanPlp: text("catatan_plp"),
   verifikasiOleh: integer("verifikasi_oleh").references(() => usersTable.id),

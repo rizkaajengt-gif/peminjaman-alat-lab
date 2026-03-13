@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, laboratoriumTable, alatTable, bahanTable, usersTable, peminjamanAlatTable, peminjamanRuanganTable, permintaanBahanTable, plpLaboratoriumTable } from "@workspace/db";
-import { eq, and, gte, lte, count, inArray } from "drizzle-orm";
+import { db, laboratoriumTable, alatTable, bahanTable, usersTable, peminjamanAlatTable, peminjamanRuanganTable, permintaanBahanTable, plpLaboratoriumTable, peminjamanPhantomTable, phantomTable, peminjamanAlatItemTable, peminjamanPhantomItemTable } from "@workspace/db";
+import { eq, and, gte, lte, count, inArray, sql } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 
 async function getPlpLabIds(userId: number): Promise<number[]> {
@@ -273,6 +273,147 @@ router.get("/statistik-lab/export", requireAuth, requireRole("admin", "plp"), as
     res.send("\uFEFF" + csv);
   } catch (e) {
     res.status(500).json({ message: "Gagal export" });
+  }
+});
+
+// ─── LOGBOOK ENDPOINTS ───────────────────────────────────────────────────────
+
+function formatHari(dateStr: string): string {
+  const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const d = new Date(dateStr + "T00:00:00");
+  const day = days[d.getDay()];
+  const dd = String(d.getDate()).padStart(2, "0");
+  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+  return `${day}, ${dd}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+router.get("/logbook/alat", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { labId, alatId, startDate, endDate } = req.query;
+    let allowedLabIds: number[] | null = null;
+    if (req.user!.role === "plp") {
+      allowedLabIds = await getPlpLabIds(req.user!.id);
+    }
+
+    const labs = labId ? [{ id: Number(labId), nama: "" }] : await db.query.laboratoriumTable.findMany({ where: allowedLabIds ? inArray(laboratoriumTable.id, allowedLabIds) : undefined });
+    const alats = await db.query.alatTable.findMany({
+      where: and(
+        labId ? eq(alatTable.laboratoriumId, Number(labId)) : (allowedLabIds ? inArray(alatTable.laboratoriumId, allowedLabIds) : undefined),
+        alatId ? eq(alatTable.id, Number(alatId)) : undefined
+      ),
+    });
+
+    const allPeminjaman = await db.query.peminjamanAlatTable.findMany({
+      where: and(
+        labId ? eq(peminjamanAlatTable.laboratoriumId, Number(labId)) : (allowedLabIds ? inArray(peminjamanAlatTable.laboratoriumId, allowedLabIds) : undefined),
+        startDate ? gte(peminjamanAlatTable.tanggalPinjam, startDate as string) : undefined,
+        endDate ? lte(peminjamanAlatTable.tanggalPinjam, endDate as string) : undefined,
+      ),
+      with: { user: true, laboratorium: true, items: { with: { alat: true } } },
+    });
+
+    const filtered = alatId ? allPeminjaman.filter(p => p.items?.some((i: any) => i.alatId === Number(alatId))) : allPeminjaman;
+
+    res.json({
+      alats,
+      records: filtered.map((p, idx) => ({
+        no: idx + 1,
+        noPeminjaman: p.noPeminjaman,
+        hariTanggal: formatHari(p.tanggalPinjam),
+        tanggal: p.tanggalPinjam,
+        jamMulai: p.jamPinjam || "-",
+        jamSelesai: p.jamKembali || "-",
+        namaPengguna: p.user?.nama || "-",
+        nimNip: p.user?.nim || p.user?.nip || "-",
+        tujuan: p.keperluan,
+        kategori: p.kategori || "pembelajaran",
+        laboratorium: p.laboratorium?.nama || "-",
+        alat: p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ") || "-",
+        status: p.status,
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ message: "Server error: " + e.message });
+  }
+});
+
+router.get("/logbook/ruangan", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { labId, startDate, endDate } = req.query;
+    let allowedLabIds: number[] | null = null;
+    if (req.user!.role === "plp") {
+      allowedLabIds = await getPlpLabIds(req.user!.id);
+    }
+
+    const allPeminjaman = await db.query.peminjamanRuanganTable.findMany({
+      where: and(
+        labId ? eq(peminjamanRuanganTable.laboratoriumId, Number(labId)) : (allowedLabIds ? inArray(peminjamanRuanganTable.laboratoriumId, allowedLabIds) : undefined),
+        startDate ? gte(peminjamanRuanganTable.tanggalMulai, startDate as string) : undefined,
+        endDate ? lte(peminjamanRuanganTable.tanggalMulai, endDate as string) : undefined,
+      ),
+      with: { user: true, laboratorium: true },
+    });
+
+    res.json({
+      records: allPeminjaman.map((p, idx) => ({
+        no: idx + 1,
+        noPeminjaman: p.noPeminjaman,
+        hariTanggal: formatHari(p.tanggalMulai),
+        tanggal: p.tanggalMulai,
+        jamMulai: p.waktuMulai || "-",
+        jamSelesai: p.waktuSelesai || "-",
+        namaPengguna: p.user?.nama || "-",
+        nimNip: (p.user as any)?.nim || (p.user as any)?.nip || "-",
+        tujuan: p.judulKegiatan || p.keperluan,
+        kategori: p.kategori || "pembelajaran",
+        laboratorium: p.laboratorium?.nama || "-",
+        jumlahPeserta: p.jumlahPeserta,
+        status: p.status,
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ message: "Server error: " + e.message });
+  }
+});
+
+router.get("/logbook/phantom", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { labId, phantomId, startDate, endDate } = req.query;
+    let allowedLabIds: number[] | null = null;
+    if (req.user!.role === "plp") {
+      allowedLabIds = await getPlpLabIds(req.user!.id);
+    }
+
+    const allPeminjaman = await db.query.peminjamanPhantomTable.findMany({
+      where: and(
+        labId ? eq(peminjamanPhantomTable.laboratoriumId, Number(labId)) : (allowedLabIds ? inArray(peminjamanPhantomTable.laboratoriumId, allowedLabIds) : undefined),
+        startDate ? gte(peminjamanPhantomTable.tanggalPinjam, startDate as string) : undefined,
+        endDate ? lte(peminjamanPhantomTable.tanggalPinjam, endDate as string) : undefined,
+      ),
+      with: { user: true, laboratorium: true, items: { with: { phantom: true } } },
+    });
+
+    const filtered = phantomId ? allPeminjaman.filter(p => p.items?.some((i: any) => i.phantomId === Number(phantomId))) : allPeminjaman;
+
+    res.json({
+      records: filtered.map((p, idx) => ({
+        no: idx + 1,
+        noPeminjaman: p.noPeminjaman,
+        hariTanggal: formatHari(p.tanggalPinjam),
+        tanggal: p.tanggalPinjam,
+        jamMulai: p.jamPinjam || "-",
+        jamSelesai: p.jamKembali || "-",
+        namaPengguna: p.user?.nama || "-",
+        nimNip: (p.user as any)?.nim || (p.user as any)?.nip || "-",
+        tujuan: p.keperluan,
+        kategori: p.kategori || "pembelajaran",
+        laboratorium: p.laboratorium?.nama || "-",
+        phantom: p.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ") || "-",
+        status: p.status,
+      })),
+    });
+  } catch (e: any) {
+    res.status(500).json({ message: "Server error: " + e.message });
   }
 });
 
