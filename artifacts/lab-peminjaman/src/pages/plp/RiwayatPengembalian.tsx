@@ -80,8 +80,8 @@ function VerifikasiPengembalianTab() {
   const [kondisi, setKondisi] = useState("baik");
   const updateStatus = useUpdatePeminjamanAlatStatus();
 
-  const { data: all, isLoading } = useGetPeminjamanAlat({ status: "dipinjam" as any });
-  const pending = all?.filter((p: any) => p.requestKembali === "menunggu") || [];
+  const { data: all, isLoading } = useGetPeminjamanAlat({});
+  const pending = all?.filter((p: any) => (p.status === "disetujui" || p.status === "dipinjam") && p.requestKembali === "menunggu") || [];
 
   const handleVerifikasi = () => {
     if (!selected) return;
@@ -121,10 +121,10 @@ function VerifikasiPengembalianTab() {
                 <TableCell>
                   <div className="font-medium text-sm">{p.user?.nama}</div>
                   <div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.nip || p.user?.role}</div>
-                  {p.user?.noWa && (
-                    <a href={`https://wa.me/${p.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                  {(p.user?.noWa || p.user?.noHp) && (
+                    <a href={`https://wa.me/${(p.user.noWa || p.user.noHp).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-800 mt-0.5">
-                      <MessageCircle className="w-3 h-3" />{p.user.noWa}
+                      <MessageCircle className="w-3 h-3" />{p.user.noWa || p.user.noHp}
                     </a>
                   )}
                 </TableCell>
@@ -148,12 +148,12 @@ function VerifikasiPengembalianTab() {
             <div className="space-y-4 py-2">
               <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Peminjam</span><span className="font-bold">{selected.user?.nama}</span></div>
-                {selected.user?.noWa && (
+                {(selected.user?.noWa || selected.user?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${selected.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                    <a href={`https://wa.me/${(selected.user.noWa || selected.user.noHp).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 hover:text-green-800 bg-green-50 px-2 py-0.5 rounded-lg border border-green-200">
-                      <MessageCircle className="w-3.5 h-3.5" />{selected.user.noWa}
+                      <MessageCircle className="w-3.5 h-3.5" />{selected.user.noWa || selected.user.noHp}
                     </a>
                   </div>
                 )}
@@ -355,11 +355,11 @@ function VerifikasiPengembalianPhantomTab() {
   const [kondisi, setKondisi] = useState("baik");
 
   const { data: all, isLoading } = useQuery({
-    queryKey: ["/api/peminjaman-phantom", { status: "dipinjam" }],
-    queryFn: () => customFetch("/api/peminjaman-phantom?status=dipinjam"),
+    queryKey: ["/api/peminjaman-phantom"],
+    queryFn: () => customFetch("/api/peminjaman-phantom"),
     select: (d: any) => d as any[],
   });
-  const pending = all?.filter((p: any) => p.requestKembali === "menunggu") || [];
+  const pending = all?.filter((p: any) => (p.status === "disetujui" || p.status === "dipinjam") && p.requestKembali === "menunggu") || [];
 
   const verifikasiMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
@@ -397,10 +397,10 @@ function VerifikasiPengembalianPhantomTab() {
                 <TableCell>
                   <div className="font-medium text-sm">{p.user?.nama}</div>
                   <div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div>
-                  {p.user?.noWa && (
-                    <a href={`https://wa.me/${p.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                  {(p.user?.noWa || p.user?.noHp) && (
+                    <a href={`https://wa.me/${(p.user.noWa || p.user.noHp).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium mt-0.5">
-                      <MessageCircle className="w-3 h-3" />{p.user.noWa}
+                      <MessageCircle className="w-3 h-3" />{p.user.noWa || p.user.noHp}
                     </a>
                   )}
                 </TableCell>
@@ -424,10 +424,10 @@ function VerifikasiPengembalianPhantomTab() {
               <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Peminjam</span><span className="font-bold">{selected.user?.nama}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Phantom</span><span className="text-right max-w-xs text-xs">{selected.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ")}</span></div>
-                {selected.user?.noWa && (
+                {(selected.user?.noWa || selected.user?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${selected.user.noWa.replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user.nama}, tolong segera kembalikan phantom yang Anda pinjam (No. ${selected.noPeminjaman}). Terima kasih.`)}`}
+                    <a href={`https://wa.me/${(selected.user.noWa || selected.user.noHp).replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user.nama}, tolong segera kembalikan phantom yang Anda pinjam (No. ${selected.noPeminjaman}). Terima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg px-2.5 py-1 font-medium transition-colors">
                       <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
@@ -500,10 +500,10 @@ function RiwayatPhantomTab() {
               <TableCell>
                 <div className="font-medium text-sm">{p.user?.nama}</div>
                 <div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div>
-                {p.user?.noWa && (
-                  <a href={`https://wa.me/${p.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                {(p.user?.noWa || p.user?.noHp) && (
+                  <a href={`https://wa.me/${(p.user.noWa || p.user.noHp).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium mt-0.5">
-                    <MessageCircle className="w-3 h-3" />{p.user.noWa}
+                    <MessageCircle className="w-3 h-3" />{p.user.noWa || p.user.noHp}
                   </a>
                 )}
               </TableCell>

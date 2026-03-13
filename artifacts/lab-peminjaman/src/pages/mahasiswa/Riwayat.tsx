@@ -94,14 +94,14 @@ export default function MahasiswaRiwayat() {
                     <TableCell className="text-sm">{formatDate(p.tanggalKembali)}</TableCell>
                     <TableCell><StatusBadge status={p.status} /></TableCell>
                     <TableCell className="text-right space-x-1">
-                      {p.status === "dipinjam" && p.requestKembali !== "menunggu" && p.requestKembali !== "selesai" && (
-                        <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-orange-300 text-orange-700 hover:bg-orange-50 gap-1"
+                      {(p.status === "disetujui" || p.status === "dipinjam") && p.requestKembali !== "menunggu" && p.requestKembali !== "selesai" && (
+                        <Button size="sm" className="h-8 text-xs rounded-lg bg-orange-500 hover:bg-orange-600 text-white gap-1"
                           disabled={requestKembali.isPending} onClick={() => requestKembali.mutate(p.id)}>
-                          <RotateCcw className="w-3 h-3" />Kembalikan
+                          <RotateCcw className="w-3 h-3" />Ajukan Kembali
                         </Button>
                       )}
                       {p.requestKembali === "menunggu" && (
-                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Menunggu Verifikasi</Badge>
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Menunggu Verifikasi PLP</Badge>
                       )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak Surat" onClick={() => openPrint("peminjaman-alat", p.id)}>
                         <Printer className="w-4 h-4" />
@@ -138,14 +138,14 @@ export default function MahasiswaRiwayat() {
                     <TableCell className="text-sm">{formatDate(p.tanggalKembali)}</TableCell>
                     <TableCell><StatusBadge status={p.status} /></TableCell>
                     <TableCell className="text-right space-x-1">
-                      {p.status === "dipinjam" && p.requestKembali !== "menunggu" && p.requestKembali !== "selesai" && (
-                        <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-orange-300 text-orange-700 hover:bg-orange-50 gap-1"
+                      {(p.status === "disetujui" || p.status === "dipinjam") && p.requestKembali !== "menunggu" && p.requestKembali !== "selesai" && (
+                        <Button size="sm" className="h-8 text-xs rounded-lg bg-orange-500 hover:bg-orange-600 text-white gap-1"
                           disabled={requestKembaliPhantom.isPending} onClick={() => requestKembaliPhantom.mutate(p.id)}>
-                          <RotateCcw className="w-3 h-3" />Kembalikan
+                          <RotateCcw className="w-3 h-3" />Ajukan Kembali
                         </Button>
                       )}
                       {p.requestKembali === "menunggu" && (
-                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Menunggu Verifikasi</Badge>
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Menunggu Verifikasi PLP</Badge>
                       )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" title="Cetak" onClick={() => openPrint("peminjaman-phantom", p.id)}>
                         <Printer className="w-4 h-4" />

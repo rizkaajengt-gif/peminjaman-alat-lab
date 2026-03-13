@@ -145,7 +145,7 @@ router.post("/:id/request-kembali", requireAuth, async (req: AuthRequest, res) =
     if (peminjaman.userId !== req.user!.id && !["plp", "admin"].includes(req.user!.role)) {
       res.status(403).json({ message: "Tidak diizinkan" }); return;
     }
-    if (peminjaman.status !== "dipinjam") { res.status(400).json({ message: "Hanya bisa mengajukan pengembalian saat status dipinjam" }); return; }
+    if (peminjaman.status !== "dipinjam" && peminjaman.status !== "disetujui") { res.status(400).json({ message: "Hanya bisa mengajukan pengembalian saat status disetujui/dipinjam" }); return; }
 
     const [updated] = await db.update(peminjamanPhantomTable)
       .set({ requestKembali: "menunggu", updatedAt: new Date() })

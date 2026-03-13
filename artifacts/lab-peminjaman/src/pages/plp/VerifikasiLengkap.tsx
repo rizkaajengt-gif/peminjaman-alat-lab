@@ -205,10 +205,10 @@ function VerifikasiAlatTab() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Keperluan</span><span className="text-right max-w-xs">{selected.keperluan}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Pinjam</span><span>{formatDate(selected.tanggalPinjam)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Kembali</span><span>{formatDate(selected.tanggalKembali)}</span></div>
-                {(selected.user as any)?.noWa && (
+                {((selected.user as any)?.noWa || (selected.user as any)?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${(selected.user as any).noWa.replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, pengajuan peminjaman alat Anda (No. ${selected.noPeminjaman}) sedang kami proses. Terima kasih.`)}`}
+                    <a href={`https://wa.me/${((selected.user as any).noWa || (selected.user as any).noHp).replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, pengajuan peminjaman alat Anda (No. ${selected.noPeminjaman}) sedang kami proses. Terima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg px-2.5 py-1 font-medium transition-colors">
                       <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
@@ -394,10 +394,10 @@ function VerifikasiPhantomTab() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Keperluan</span><span className="text-right max-w-xs">{selected.keperluan}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Pinjam</span><span>{formatDate(selected.tanggalPinjam)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tgl Kembali</span><span>{formatDate(selected.tanggalKembali)}</span></div>
-                {(selected.user as any)?.noWa && (
+                {((selected.user as any)?.noWa || (selected.user as any)?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${(selected.user as any).noWa.replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, pengajuan peminjaman phantom Anda (No. ${selected.noPeminjaman}) sedang kami proses. Terima kasih.`)}`}
+                    <a href={`https://wa.me/${((selected.user as any).noWa || (selected.user as any).noHp).replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, pengajuan peminjaman phantom Anda (No. ${selected.noPeminjaman}) sedang kami proses. Terima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg px-2.5 py-1 font-medium transition-colors">
                       <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
