@@ -47,7 +47,10 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 interface NavItem {
   title: string;
@@ -100,58 +103,90 @@ function NotifikasiBell({ role, stats }: { role: string; stats: any }) {
     queryFn: () => customFetch("/api/notifikasi"),
     refetchInterval: 60000,
   });
+  const [selectedNotif, setSelectedNotif] = useState<any | null>(null);
   const list = (notifikasi as any[]) || [];
   const pendingVerif = (["admin", "plp"].includes(role)) ? ((stats?.peminjamanAlatMenunggu || 0) + (stats?.peminjamanRuanganMenunggu || 0)) : 0;
   const totalBadge = list.length + pendingVerif;
 
+  function fmtDate(d: string) {
+    try { return format(new Date(d), "dd MMMM yyyy, HH:mm", { locale: idLocale }); } catch { return d; }
+  }
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary">
-          <BellRing size={18} />
-          {totalBadge > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-              {totalBadge > 9 ? "9+" : totalBadge}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 rounded-2xl shadow-xl" align="end">
-        <div className="p-3 border-b border-slate-100 flex items-center gap-2">
-          <BellRing className="w-4 h-4 text-primary" />
-          <span className="font-semibold text-sm">Notifikasi</span>
-        </div>
-        <ScrollArea className="max-h-72">
-          {(["admin", "plp"].includes(role)) && pendingVerif > 0 && (
-            <Link href="/plp/verifikasi">
-              <div className="px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50">
+    <>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary">
+            <BellRing size={18} />
+            {totalBadge > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {totalBadge > 9 ? "9+" : totalBadge}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0 rounded-2xl shadow-xl" align="end">
+          <div className="p-3 border-b border-slate-100 flex items-center gap-2">
+            <BellRing className="w-4 h-4 text-primary" />
+            <span className="font-semibold text-sm">Notifikasi</span>
+          </div>
+          <ScrollArea className="max-h-72">
+            {(["admin", "plp"].includes(role)) && pendingVerif > 0 && (
+              <Link href="/plp/verifikasi">
+                <div className="px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
+                    <div>
+                      <p className="text-xs font-semibold">Ada {pendingVerif} pengajuan menunggu verifikasi</p>
+                      <p className="text-xs text-muted-foreground">Klik untuk ke halaman verifikasi</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
+            {list.length === 0 && pendingVerif === 0 && (
+              <div className="py-8 text-center text-muted-foreground text-xs">Tidak ada notifikasi</div>
+            )}
+            {list.map((n: any) => (
+              <div
+                key={n.id}
+                className="px-3 py-2.5 hover:bg-slate-50 border-b border-slate-50 last:border-0 cursor-pointer"
+                onClick={() => setSelectedNotif(n)}
+              >
                 <div className="flex items-start gap-2">
-                  <span className="mt-0.5 w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
-                  <div>
-                    <p className="text-xs font-semibold">Ada {pendingVerif} pengajuan menunggu verifikasi</p>
-                    <p className="text-xs text-muted-foreground">Klik untuk ke halaman verifikasi</p>
+                  <span className="mt-0.5 w-2 h-2 rounded-full bg-primary shrink-0"></span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold">{n.judul}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{n.pesan}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{fmtDate(n.createdAt)} · Klik untuk baca selengkapnya</p>
                   </div>
                 </div>
               </div>
-            </Link>
-          )}
-          {list.length === 0 && pendingVerif === 0 && (
-            <div className="py-8 text-center text-muted-foreground text-xs">Tidak ada notifikasi</div>
-          )}
-          {list.map((n: any) => (
-            <div key={n.id} className="px-3 py-2.5 hover:bg-slate-50 border-b border-slate-50 last:border-0">
-              <div className="flex items-start gap-2">
-                <span className="mt-0.5 w-2 h-2 rounded-full bg-primary shrink-0"></span>
-                <div>
-                  <p className="text-xs font-semibold">{n.judul}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{n.pesan}</p>
-                </div>
-              </div>
+            ))}
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={!!selectedNotif} onOpenChange={(v) => !v && setSelectedNotif(null)}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <BellRing className="w-4 h-4 text-primary" />
+              {selectedNotif?.judul}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="bg-slate-50 rounded-xl p-4 text-sm leading-relaxed text-slate-700 whitespace-pre-line">
+              {selectedNotif?.pesan}
             </div>
-          ))}
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Dari: <strong>{selectedNotif?.createdBy?.nama || "Administrator"}</strong></span>
+              <span>{selectedNotif ? fmtDate(selectedNotif.createdAt) : ""}</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

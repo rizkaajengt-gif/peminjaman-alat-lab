@@ -535,6 +535,16 @@ function VerifikasiRuanganTab() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Waktu</span><span>{selected.waktuMulai?.slice(0,5)} - {selected.waktuSelesai?.slice(0,5)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Jumlah Peserta</span><span className="font-bold">{selected.jumlahPeserta} orang</span></div>
               </div>
+              {((selected.user as any)?.noWa || (selected.user as any)?.noHp) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-sm">WhatsApp</span>
+                  <a href={`https://wa.me/${((selected.user as any).noWa || (selected.user as any).noHp).replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, pengajuan peminjaman ruangan Anda (No. ${selected.noPeminjaman}) sedang kami proses. Terima kasih.`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 font-medium">
+                    <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
+                  </a>
+                </div>
+              )}
               <div className="space-y-1.5"><Label>Catatan</Label><Textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional..." className="rounded-xl resize-none" rows={2} /></div>
             </div>
           )}
