@@ -18,6 +18,7 @@ export const usersTable = pgTable("users", {
   noHp: text("no_hp"),
   noWa: text("no_wa"),
   callmebotKey: text("callmebot_key"),
+  tandaTangan: text("tanda_tangan"),
   angkatan: text("angkatan"),
   jurusanId: integer("jurusan_id").references(() => jurusanTable.id),
   laboratoriumId: integer("laboratorium_id").references(() => laboratoriumTable.id),

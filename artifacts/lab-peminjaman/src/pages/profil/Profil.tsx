@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
+import { SignaturePad } from "@/components/ui-custom/SignaturePad";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, User, KeyRound, Save, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, User, KeyRound, Save, AlertTriangle, CheckCircle2, PenLine, Phone, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", mahasiswa: "Mahasiswa", plp: "PLP", gudang: "Gudang", dosen: "Dosen" };
@@ -26,6 +27,8 @@ export default function Profil() {
 
   const [nama, setNama] = useState(user?.nama || "");
   const [noHp, setNoHp] = useState((user as any)?.noHp || "");
+  const [noWa, setNoWa] = useState((user as any)?.noWa || "");
+  const [tandaTangan, setTandaTangan] = useState<string | null>((user as any)?.tandaTangan || null);
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [passwordLama, setPasswordLama] = useState("");
@@ -41,7 +44,12 @@ export default function Profil() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ nama: nama.trim(), noHp: noHp.trim() }),
+        body: JSON.stringify({
+          nama: nama.trim(),
+          noHp: noHp.trim(),
+          noWa: noWa.trim(),
+          tandaTangan,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Gagal menyimpan");
@@ -79,7 +87,7 @@ export default function Profil() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <PageHeader title="Profil Saya" description="Kelola informasi akun dan keamanan login Anda." />
+      <PageHeader title="Profil Saya" description="Kelola informasi akun, kontak WA, tanda tangan, dan keamanan login Anda." />
 
       {/* Info Akun */}
       <Card className="p-6 border-none shadow-lg rounded-2xl">
@@ -105,10 +113,8 @@ export default function Profil() {
               <Label>Nama Lengkap</Label>
               <Input value={nama} onChange={e => setNama(e.target.value)} className="rounded-xl h-10" />
             </div>
-            <div className="space-y-1.5">
-              <Label>No. Handphone</Label>
-              <Input value={noHp} onChange={e => setNoHp(e.target.value)} className="rounded-xl h-10" placeholder="08xx-xxxx-xxxx" />
-            </div>
+
+            {/* NIM/NIP readonly */}
             {user?.nim && (
               <div className="space-y-1.5">
                 <Label>NIM</Label>
@@ -121,6 +127,39 @@ export default function Profil() {
                 <Input value={(user as any).nip} disabled className="rounded-xl h-10 bg-slate-50 text-muted-foreground" />
               </div>
             )}
+
+            {/* Kontak */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-slate-500" />No. Handphone
+                </Label>
+                <Input value={noHp} onChange={e => setNoHp(e.target.value)} className="rounded-xl h-10" placeholder="08xx-xxxx-xxxx" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 text-green-600" />
+                  <span>No. WhatsApp <span className="text-red-500">*</span></span>
+                </Label>
+                <Input value={noWa} onChange={e => setNoWa(e.target.value)} className="rounded-xl h-10 border-green-200 focus:border-green-400" placeholder="628xx-xxxx-xxxx" />
+                <p className="text-[10px] text-muted-foreground">Format: 628xxxxxxxxx (tanpa +)</p>
+              </div>
+            </div>
+
+            {/* Tanda Tangan */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <PenLine className="w-3.5 h-3.5 text-teal-600" />
+                Tanda Tangan Digital <span className="text-[10px] font-normal text-muted-foreground">(akan muncul di surat peminjaman)</span>
+              </Label>
+              <SignaturePad
+                value={tandaTangan}
+                onChange={setTandaTangan}
+                width={600}
+                height={160}
+              />
+            </div>
+
             <Button onClick={handleSaveProfile} disabled={savingProfile} className="rounded-xl gap-2">
               {savingProfile ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
               Simpan Profil

@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ClipboardList, CalendarDays, FlaskConical, RotateCcw, CheckCircle2, Printer } from "lucide-react";
+import { Loader2, ClipboardList, CalendarDays, FlaskConical, RotateCcw, CheckCircle2, Printer, MessageCircle } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -110,7 +110,16 @@ function VerifikasiPengembalianTab() {
             : pending.map((p: any) => (
               <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
                 <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
-                <TableCell><div className="font-medium text-sm">{p.user?.nama}</div><div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.nip || p.user?.role}</div></TableCell>
+                <TableCell>
+                  <div className="font-medium text-sm">{p.user?.nama}</div>
+                  <div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.nip || p.user?.role}</div>
+                  {p.user?.noWa && (
+                    <a href={`https://wa.me/${p.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-800 mt-0.5">
+                      <MessageCircle className="w-3 h-3" />{p.user.noWa}
+                    </a>
+                  )}
+                </TableCell>
                 <TableCell className="text-sm">{p.laboratorium?.nama}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</TableCell>
                 <TableCell className="text-sm">{fmt(p.tanggalKembali)}</TableCell>
@@ -131,6 +140,15 @@ function VerifikasiPengembalianTab() {
             <div className="space-y-4 py-2">
               <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Peminjam</span><span className="font-bold">{selected.user?.nama}</span></div>
+                {selected.user?.noWa && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">WhatsApp</span>
+                    <a href={`https://wa.me/${selected.user.noWa.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 hover:text-green-800 bg-green-50 px-2 py-0.5 rounded-lg border border-green-200">
+                      <MessageCircle className="w-3.5 h-3.5" />{selected.user.noWa}
+                    </a>
+                  </div>
+                )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Lab</span><span>{selected.laboratorium?.nama}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Alat</span><span className="text-right max-w-xs text-xs">{selected.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}</span></div>
               </div>

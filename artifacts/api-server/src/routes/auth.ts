@@ -80,9 +80,14 @@ router.get("/me", requireAuth, async (req: AuthRequest, res) => {
 
 router.put("/me", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { nama, noHp } = req.body;
+    const { nama, noHp, noWa, tandaTangan } = req.body;
     if (!nama) { res.status(400).json({ message: "Nama wajib diisi" }); return; }
-    await db.update(usersTable).set({ nama, noHp: noHp || null }).where(eq(usersTable.id, req.user!.id));
+    await db.update(usersTable).set({
+      nama,
+      noHp: noHp || null,
+      noWa: noWa || null,
+      tandaTangan: tandaTangan || null,
+    }).where(eq(usersTable.id, req.user!.id));
     const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, req.user!.id), with: { jurusan: true } });
     const { password: _, ...rest } = user!;
     res.json(rest);

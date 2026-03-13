@@ -13,6 +13,23 @@ function fmt(d?: string) {
 
 const LOGO = `${import.meta.env.BASE_URL}logo-poltekkes.png`;
 
+function TTDBox({ label, nama, nimNip, tandaTangan }: { label: string; nama?: string; nimNip?: string; tandaTangan?: string | null }) {
+  return (
+    <div className="text-center text-[11px]">
+      <p className="text-slate-600 font-medium mb-1">{label}</p>
+      <div className="border border-slate-200 rounded-lg bg-slate-50/50 flex items-end justify-center" style={{ height: 80 }}>
+        {tandaTangan ? (
+          <img src={tandaTangan} alt="tanda tangan" className="max-h-full max-w-full object-contain p-1" />
+        ) : (
+          <div className="w-full border-b border-dashed border-slate-300 mx-4 mb-2" />
+        )}
+      </div>
+      <p className="font-semibold text-slate-800 mt-1 truncate">{nama || "( ________________________________ )"}</p>
+      <p className="text-[10px] text-slate-500">{nimNip ? `NIM/NIP: ${nimNip}` : "NIM/NIP: ____________________"}</p>
+    </div>
+  );
+}
+
 export default function PrintPeminjaman() {
   const [, params] = useRoute("/print/peminjaman-alat/:id");
   const itemId = params?.id ? parseInt(params.id) : 0;
@@ -26,6 +43,7 @@ export default function PrintPeminjaman() {
   if (!data) return <div className="p-8 text-center text-muted-foreground">Data tidak ditemukan</div>;
 
   const user = data.user as any;
+  const nimNip = user?.nim || user?.nip || null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -61,8 +79,9 @@ export default function PrintPeminjaman() {
               {[
                 ["Tanggal Pengajuan", fmt(data.createdAt)],
                 ["Nama Peminjam", user?.nama || "-"],
-                ["NIM / NIP", user?.nim || user?.nip || "-"],
+                ["NIM / NIP", nimNip || "-"],
                 ["Jurusan", user?.jurusan?.nama || "-"],
+                ["No. WhatsApp", user?.noWa || user?.noHp || "-"],
               ].map(([label, val]) => (
                 <tr key={label} className="border-b border-slate-100 last:border-0">
                   <td className="py-1.5 px-3 font-semibold text-slate-600 w-36 bg-slate-50 whitespace-nowrap">{label}</td>
@@ -132,20 +151,20 @@ export default function PrintPeminjaman() {
           </div>
         )}
 
-        {/* TTD 3 kolom */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
-          {[
-            { label: "Peminjam", name: user?.nama },
-            { label: "PLP / Pengelola Lab", name: "" },
-            { label: "Mengetahui (Ka. Lab)", name: "" },
-          ].map(({ label, name }) => (
-            <div key={label} className="text-center text-[11px]">
-              <p className="text-slate-600 font-medium">{label}</p>
-              <div className="h-14 mt-1.5 mb-1 border-b border-slate-300"></div>
-              <p className="font-semibold text-slate-800 truncate">{name || "( ________________________________ )"}</p>
-              <p className="text-[10px] text-slate-500">NIM/NIP: ____________________</p>
-            </div>
-          ))}
+        {/* TTD 2 kolom: Peminjam + PLP */}
+        <div className="grid grid-cols-2 gap-8 mt-6">
+          <TTDBox
+            label="Peminjam"
+            nama={user?.nama}
+            nimNip={nimNip}
+            tandaTangan={user?.tandaTangan}
+          />
+          <TTDBox
+            label="PLP / Pengelola Lab"
+            nama=""
+            nimNip={null}
+            tandaTangan={null}
+          />
         </div>
 
         <p className="text-center text-[10px] text-slate-400 mt-4">

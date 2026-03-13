@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,8 +25,10 @@ const schema = z.object({
 });
 
 export default function PermintaanBahan() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const createMutation = useCreatePermintaanBahan();
+  const isPLPOrAdmin = user?.role === "plp" || user?.role === "admin" || user?.role === "gudang";
   const { data: labs } = useGetLaboratorium({});
   const { data: bahanList } = useGetBahan({});
   const [items, setItems] = useState<{ bahanId: number; jumlahDiminta: number }[]>([]);
@@ -132,8 +135,14 @@ export default function PermintaanBahan() {
           <Info className="text-blue-500 shrink-0 mt-0.5 w-5 h-5" />
           <div className="text-sm text-blue-800">
             <p className="font-semibold mb-1">Panduan Permintaan Bahan:</p>
-            <p><span className="font-medium">1. Ke PLP Lab:</span> Jika stok tersedia di PLP laboratorium tujuan. PLP akan menyiapkan bahan untuk Anda.</p>
-            <p className="mt-0.5"><span className="font-medium">2. Ke Gudang:</span> Jika stok PLP habis. Gudang akan mengambilkan dari stok pusat.</p>
+            {isPLPOrAdmin ? (
+              <>
+                <p><span className="font-medium">1. Ke PLP Lab:</span> Jika stok tersedia di PLP laboratorium tujuan.</p>
+                <p className="mt-0.5"><span className="font-medium">2. Ke Gudang:</span> Jika stok PLP habis. Gudang akan mengambilkan dari stok pusat.</p>
+              </>
+            ) : (
+              <p>Permintaan bahan diajukan langsung ke PLP Laboratorium. PLP akan menyiapkan bahan yang Anda butuhkan.</p>
+            )}
           </div>
         </div>
       </Card>
@@ -196,31 +205,43 @@ export default function PermintaanBahan() {
           {/* Pilih tujuan permintaan */}
           <div className="space-y-2">
             <Label className="font-semibold text-base">Kirim Permintaan Ke</Label>
-            {suggestion && (
-              <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-xl text-xs text-blue-700">
-                <Info className="w-3.5 h-3.5 shrink-0" />
-                Disarankan: <strong>{suggestion === "plp" ? "Ke PLP (stok PLP cukup)" : "Ke Gudang (stok PLP habis)"}</strong>
-                <Button type="button" size="sm" variant="ghost" className="h-6 text-xs ml-auto rounded-lg text-blue-700 hover:bg-blue-100"
-                  onClick={() => form.setValue("tujuan", suggestion)}>Terapkan</Button>
+            {isPLPOrAdmin ? (
+              <>
+                {suggestion && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-xl text-xs text-blue-700">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    Disarankan: <strong>{suggestion === "plp" ? "Ke PLP (stok PLP cukup)" : "Ke Gudang (stok PLP habis)"}</strong>
+                    <Button type="button" size="sm" variant="ghost" className="h-6 text-xs ml-auto rounded-lg text-blue-700 hover:bg-blue-100"
+                      onClick={() => form.setValue("tujuan", suggestion)}>Terapkan</Button>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  {(["plp", "gudang"] as const).map(opt => (
+                    <label key={opt} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${tujuan === opt ? "border-primary bg-primary/5" : "border-slate-200 hover:border-slate-300"}`}
+                      onClick={() => { form.setValue("tujuan", opt); if (opt === "gudang") form.setValue("plpId", undefined); }}>
+                      <input type="radio" name="tujuan" value={opt} checked={tujuan === opt} onChange={() => {}} className="sr-only" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          {opt === "plp" ? <UserCog className="w-4 h-4 text-teal-600" /> : <Store className="w-4 h-4 text-blue-600" />}
+                          <span className="font-semibold">{opt === "plp" ? "PLP Lab" : "Gudang"}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {opt === "plp" ? "Stok tersedia di lab → minta ke PLP" : "Stok PLP habis → minta ke gudang pusat"}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-primary bg-primary/5">
+                <UserCog className="w-5 h-5 text-teal-600 shrink-0" />
+                <div>
+                  <span className="font-semibold text-sm">PLP Laboratorium</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">Permintaan bahan Anda akan diproses oleh PLP laboratorium</p>
+                </div>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              {(["plp", "gudang"] as const).map(opt => (
-                <label key={opt} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${tujuan === opt ? "border-primary bg-primary/5" : "border-slate-200 hover:border-slate-300"}`}
-                  onClick={() => { form.setValue("tujuan", opt); if (opt === "gudang") form.setValue("plpId", undefined); }}>
-                  <input type="radio" name="tujuan" value={opt} checked={tujuan === opt} onChange={() => {}} className="sr-only" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      {opt === "plp" ? <UserCog className="w-4 h-4 text-teal-600" /> : <Store className="w-4 h-4 text-blue-600" />}
-                      <span className="font-semibold">{opt === "plp" ? "PLP Lab" : "Gudang"}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {opt === "plp" ? "Stok tersedia di lab → minta ke PLP" : "Stok PLP habis → minta ke gudang pusat"}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
           </div>
 
           {/* PLP selector */}
