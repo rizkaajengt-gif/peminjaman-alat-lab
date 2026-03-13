@@ -84,27 +84,49 @@ function PeminjamanAktifTab() {
     select: (d: any) => d as any[],
   });
 
-  const aktifAlat = (alatData || []).filter(
+  const now = new Date();
+  const isLate = (p: any) => p.tanggalKembali && new Date(p.tanggalKembali) < now;
+
+  const sortByLate = (arr: any[]) => [
+    ...arr.filter(isLate).sort((a: any, b: any) => new Date(a.tanggalKembali).getTime() - new Date(b.tanggalKembali).getTime()),
+    ...arr.filter((p: any) => !isLate(p)),
+  ];
+
+  const aktifAlat = sortByLate((alatData || []).filter(
     (p: any) => (p.status === "disetujui" || p.status === "dipinjam") && p.requestKembali !== "menunggu"
-  );
-  const aktifPhantom = (phantomData || []).filter(
+  ));
+  const aktifPhantom = sortByLate((phantomData || []).filter(
     (p: any) => (p.status === "disetujui" || p.status === "dipinjam") && p.requestKembali !== "menunggu"
-  );
+  ));
 
   const loading = loadingAlat || loadingPhantom;
   const total = aktifAlat.length + aktifPhantom.length;
+  const totalLate = aktifAlat.filter(isLate).length + aktifPhantom.filter(isLate).length;
 
   return (
     <div className="space-y-4">
-      <Card className="border-none shadow-sm rounded-2xl p-4 bg-orange-50 border border-orange-100 flex items-start gap-3">
-        <PackageOpen className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
-        <div>
-          <p className="font-semibold text-orange-800 text-sm">Peminjaman Sedang Aktif — {total} item belum kembali</p>
-          <p className="text-xs text-orange-600 mt-0.5">
-            Gunakan tombol <strong>Hubungi via WA</strong> untuk mengingatkan mahasiswa/dosen agar segera mengembalikan. Tombol WA akan membuka WhatsApp dengan pesan pengingat yang sudah terisi otomatis.
-          </p>
-        </div>
-      </Card>
+      {totalLate > 0 && (
+        <Card className="border-none shadow-sm rounded-2xl p-4 bg-red-50 border border-red-200 flex items-start gap-3">
+          <PackageOpen className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold text-red-800 text-sm">⚠ {totalLate} peminjaman MELEWATI batas waktu pengembalian!</p>
+            <p className="text-xs text-red-600 mt-0.5">
+              Segera hubungi peminjam via WhatsApp. Tombol <strong>Hubungi via WA</strong> sudah berisi pesan pengingat otomatis.
+            </p>
+          </div>
+        </Card>
+      )}
+      {totalLate === 0 && (
+        <Card className="border-none shadow-sm rounded-2xl p-4 bg-orange-50 border border-orange-100 flex items-start gap-3">
+          <PackageOpen className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold text-orange-800 text-sm">Peminjaman Aktif — {total} item sedang dipinjam</p>
+            <p className="text-xs text-orange-600 mt-0.5">
+              Gunakan tombol <strong>Hubungi via WA</strong> untuk mengingatkan mahasiswa/dosen agar segera mengembalikan.
+            </p>
+          </div>
+        </Card>
+      )}
 
       <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center gap-2">
@@ -129,30 +151,32 @@ function PeminjamanAktifTab() {
               <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">Tidak ada alat yang sedang dipinjam</TableCell></TableRow>
             ) : aktifAlat.map((p: any) => {
               const noWa = p.user?.noWa || p.user?.noHp;
-              const pesan = `Halo ${p.user?.nama}, ini adalah pengingat bahwa Anda masih memiliki peminjaman alat (No. ${p.noPeminjaman}) yang belum dikembalikan. Mohon segera mengembalikan alat ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
-              const terlambat = p.tanggalKembali && new Date(p.tanggalKembali) < new Date();
+              const late = isLate(p);
+              const pesan = late
+                ? `Halo ${p.user?.nama}, peminjaman alat Anda (No. ${p.noPeminjaman}) SUDAH MELEWATI batas waktu pengembalian (${fmt(p.tanggalKembali)}). Mohon segera kembalikan ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`
+                : `Halo ${p.user?.nama}, ini pengingat bahwa peminjaman alat Anda (No. ${p.noPeminjaman}) perlu dikembalikan pada ${fmt(p.tanggalKembali)}. Mohon kembalikan tepat waktu ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
               return (
-                <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableRow key={p.id} className={`border-slate-50 ${late ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-slate-50/50"}`}>
                   <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
                   <TableCell>
                     <div className="font-medium text-sm">{p.user?.nama}</div>
-                    <div className="text-xs text-muted-foreground capitalize">{p.user?.nim || p.user?.role}</div>
+                    <div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.role}</div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">
                     {p.items?.map((i: any) => `${i.alat?.nama} (${i.jumlah})`).join(", ")}
                   </TableCell>
                   <TableCell>
-                    <span className={`text-sm ${terlambat ? "text-red-600 font-bold" : ""}`}>{fmt(p.tanggalKembali)}</span>
-                    {terlambat && <div className="text-xs text-red-500 font-medium">Terlambat!</div>}
+                    <span className={`text-sm ${late ? "text-red-600 font-bold" : ""}`}>{fmt(p.tanggalKembali)}</span>
+                    {late && <div className="text-[10px] font-bold text-red-500 uppercase tracking-wide mt-0.5">Terlambat!</div>}
                   </TableCell>
                   <TableCell className="text-right">
                     {noWa ? (
                       <a
                         href={`https://wa.me/${noWa.replace(/\D/g, "")}?text=${encodeURIComponent(pesan)}`}
                         target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 font-medium whitespace-nowrap"
+                        className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap border ${late ? "bg-red-50 text-red-700 border-red-300 hover:bg-red-100" : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"}`}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
+                        <MessageCircle className="w-3.5 h-3.5" />{late ? "WA Terlambat!" : "Hubungi via WA"}
                       </a>
                     ) : (
                       <span className="text-xs text-muted-foreground italic">Tidak ada WA</span>
@@ -188,30 +212,32 @@ function PeminjamanAktifTab() {
               <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">Tidak ada phantom yang sedang dipinjam</TableCell></TableRow>
             ) : aktifPhantom.map((p: any) => {
               const noWa = p.user?.noWa || p.user?.noHp;
-              const pesan = `Halo ${p.user?.nama}, ini adalah pengingat bahwa Anda masih memiliki peminjaman phantom (No. ${p.noPeminjaman}) yang belum dikembalikan. Mohon segera mengembalikan ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
-              const terlambat = p.tanggalKembali && new Date(p.tanggalKembali) < new Date();
+              const late = isLate(p);
+              const pesan = late
+                ? `Halo ${p.user?.nama}, peminjaman phantom Anda (No. ${p.noPeminjaman}) SUDAH MELEWATI batas waktu pengembalian (${fmt(p.tanggalKembali)}). Mohon segera kembalikan ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`
+                : `Halo ${p.user?.nama}, ini pengingat bahwa peminjaman phantom Anda (No. ${p.noPeminjaman}) perlu dikembalikan pada ${fmt(p.tanggalKembali)}. Mohon kembalikan tepat waktu ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
               return (
-                <TableRow key={p.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableRow key={p.id} className={`border-slate-50 ${late ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-slate-50/50"}`}>
                   <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
                   <TableCell>
                     <div className="font-medium text-sm">{p.user?.nama}</div>
-                    <div className="text-xs text-muted-foreground capitalize">{p.user?.nim || p.user?.role}</div>
+                    <div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.role}</div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">
                     {p.items?.map((i: any) => `${i.phantom?.nama} (${i.jumlah})`).join(", ")}
                   </TableCell>
                   <TableCell>
-                    <span className={`text-sm ${terlambat ? "text-red-600 font-bold" : ""}`}>{fmt(p.tanggalKembali)}</span>
-                    {terlambat && <div className="text-xs text-red-500 font-medium">Terlambat!</div>}
+                    <span className={`text-sm ${late ? "text-red-600 font-bold" : ""}`}>{fmt(p.tanggalKembali)}</span>
+                    {late && <div className="text-[10px] font-bold text-red-500 uppercase tracking-wide mt-0.5">Terlambat!</div>}
                   </TableCell>
                   <TableCell className="text-right">
                     {noWa ? (
                       <a
                         href={`https://wa.me/${noWa.replace(/\D/g, "")}?text=${encodeURIComponent(pesan)}`}
                         target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 font-medium whitespace-nowrap"
+                        className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap border ${late ? "bg-red-50 text-red-700 border-red-300 hover:bg-red-100" : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"}`}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
+                        <MessageCircle className="w-3.5 h-3.5" />{late ? "WA Terlambat!" : "Hubungi via WA"}
                       </a>
                     ) : (
                       <span className="text-xs text-muted-foreground italic">Tidak ada WA</span>

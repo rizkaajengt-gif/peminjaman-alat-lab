@@ -97,19 +97,43 @@ const GROUP_LABELS: Record<string, string> = {
   Gudang: "Gudang",
 };
 
-function NotifikasiBell({ role, stats }: { role: string; stats: any }) {
+function NotifikasiBell({ role, stats, userId }: { role: string; stats: any; userId: number }) {
   const { data: notifikasi } = useQuery({
     queryKey: ["/api/notifikasi"],
     queryFn: () => customFetch("/api/notifikasi"),
     refetchInterval: 60000,
   });
   const [selectedNotif, setSelectedNotif] = useState<any | null>(null);
+
+  const storageKey = `sipelab_read_notifs_${userId}`;
+  const [readIds, setReadIds] = useState<Set<number>>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  function markRead(id: number) {
+    setReadIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem(storageKey, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }
+
   const list = (notifikasi as any[]) || [];
+  const unreadList = list.filter((n: any) => !readIds.has(n.id));
   const pendingVerif = (["admin", "plp"].includes(role)) ? ((stats?.peminjamanAlatMenunggu || 0) + (stats?.peminjamanRuanganMenunggu || 0)) : 0;
-  const totalBadge = list.length + pendingVerif;
+  const totalBadge = unreadList.length + pendingVerif;
 
   function fmtDate(d: string) {
     try { return format(new Date(d), "dd MMMM yyyy, HH:mm", { locale: idLocale }); } catch { return d; }
+  }
+
+  function openNotif(n: any) {
+    setSelectedNotif(n);
+    markRead(n.id);
   }
 
   return (
@@ -126,9 +150,21 @@ function NotifikasiBell({ role, stats }: { role: string; stats: any }) {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0 rounded-2xl shadow-xl" align="end">
-          <div className="p-3 border-b border-slate-100 flex items-center gap-2">
-            <BellRing className="w-4 h-4 text-primary" />
-            <span className="font-semibold text-sm">Notifikasi</span>
+          <div className="p-3 border-b border-slate-100 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <BellRing className="w-4 h-4 text-primary" />
+              <span className="font-semibold text-sm">Notifikasi</span>
+            </div>
+            {unreadList.length > 0 && (
+              <button
+                className="text-[10px] text-primary hover:underline"
+                onClick={() => {
+                  list.forEach((n: any) => markRead(n.id));
+                }}
+              >
+                Tandai semua dibaca
+              </button>
+            )}
           </div>
           <ScrollArea className="max-h-72">
             {(["admin", "plp"].includes(role)) && pendingVerif > 0 && (
@@ -147,22 +183,30 @@ function NotifikasiBell({ role, stats }: { role: string; stats: any }) {
             {list.length === 0 && pendingVerif === 0 && (
               <div className="py-8 text-center text-muted-foreground text-xs">Tidak ada notifikasi</div>
             )}
-            {list.map((n: any) => (
-              <div
-                key={n.id}
-                className="px-3 py-2.5 hover:bg-slate-50 border-b border-slate-50 last:border-0 cursor-pointer"
-                onClick={() => setSelectedNotif(n)}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="mt-0.5 w-2 h-2 rounded-full bg-primary shrink-0"></span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold">{n.judul}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{n.pesan}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{fmtDate(n.createdAt)} · Klik untuk baca selengkapnya</p>
+            {list.map((n: any) => {
+              const isRead = readIds.has(n.id);
+              return (
+                <div
+                  key={n.id}
+                  className={`px-3 py-2.5 border-b border-slate-50 last:border-0 cursor-pointer transition-colors ${isRead ? "hover:bg-slate-50/50 opacity-60" : "hover:bg-slate-50 bg-blue-50/30"}`}
+                  onClick={() => openNotif(n)}
+                >
+                  <div className="flex items-start gap-2">
+                    {isRead
+                      ? <span className="mt-0.5 w-2 h-2 rounded-full bg-slate-300 shrink-0"></span>
+                      : <span className="mt-0.5 w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse"></span>
+                    }
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs ${isRead ? "font-normal text-muted-foreground" : "font-semibold"}`}>{n.judul}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{n.pesan}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                        {fmtDate(n.createdAt)} {isRead ? "· Sudah dibaca" : "· Klik untuk baca"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </ScrollArea>
         </PopoverContent>
       </Popover>
@@ -465,7 +509,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-1 md:gap-2">
-            <NotifikasiBell role={user.role} stats={stats} />
+            <NotifikasiBell role={user.role} stats={stats} userId={user.id} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
