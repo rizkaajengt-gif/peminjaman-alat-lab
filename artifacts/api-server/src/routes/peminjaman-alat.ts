@@ -19,7 +19,7 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
     const { status, userId, laboratoriumId } = req.query;
     const conditions: SQL[] = [];
 
-    if (req.user!.role === "mahasiswa") {
+    if (req.user!.role === "mahasiswa" || req.user!.role === "dosen") {
       conditions.push(eq(peminjamanAlatTable.userId, req.user!.id));
     } else if (req.user!.role === "plp") {
       const labIds = await getPlpLabIds(req.user!.id);
