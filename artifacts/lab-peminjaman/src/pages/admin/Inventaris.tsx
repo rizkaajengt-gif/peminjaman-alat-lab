@@ -54,7 +54,7 @@ export default function AdminInventaris() {
   );
 }
 
-function ImportCsvDialog({ open, onClose, type, queryKey }: { open: boolean; onClose: () => void; type: "alat" | "bahan"; queryKey: string }) {
+function ImportCsvDialog({ open, onClose, type, queryKey }: { open: boolean; onClose: () => void; type: "alat" | "bahan" | "phantom"; queryKey: string }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [importCsv, setImportCsv] = useState("");
@@ -87,8 +87,22 @@ function ImportCsvDialog({ open, onClose, type, queryKey }: { open: boolean; onC
 
   const handleClose = () => { setImportCsv(""); setImportResult(null); if (fileRef.current) fileRef.current.value = ""; onClose(); };
 
-  const typeLabel = type === "alat" ? "Alat" : "Bahan";
-  const colFormat = type === "alat" ? "kode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId" : "kode,nama,deskripsi,stok,stokMinimal,satuan,laboratoriumId";
+  const typeLabel = type === "alat" ? "Alat" : type === "bahan" ? "Bahan" : "Phantom";
+  const colFormat = type === "alat"
+    ? "kode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId"
+    : type === "bahan"
+    ? "kode,nama,deskripsi,stok,stokMinimal,satuan,laboratoriumId"
+    : "kode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId";
+
+  const handleDownloadTemplate = () => {
+    const url = `/api/import/${type}/template`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `template_import_${type}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   return (
     <Dialog open={open} onOpenChange={o => !o && handleClose()}>
@@ -100,22 +114,28 @@ function ImportCsvDialog({ open, onClose, type, queryKey }: { open: boolean; onC
             className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-primary transition-colors"
           >
             <Upload className="mx-auto mb-2 text-muted-foreground w-8 h-8" />
-            <p className="text-sm font-medium">{importCsv ? "File dipilih. Klik untuk ganti." : "Klik untuk pilih file CSV"}</p>
+            <p className="text-sm font-medium">{importCsv ? "✓ File dipilih. Klik untuk ganti." : "Klik untuk pilih file CSV"}</p>
             <p className="text-xs text-muted-foreground mt-1">Format: .csv</p>
             <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
           </div>
-          <div className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-1">
+          <div className="text-xs bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
             <p className="font-semibold text-blue-700">Format kolom CSV:</p>
-            <p className="font-mono">{colFormat}</p>
-            <p>Unduh template untuk contoh data lengkap.</p>
+            <p className="font-mono text-blue-800">{colFormat}</p>
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 underline underline-offset-2"
+            >
+              <Download className="w-3.5 h-3.5" />Unduh template CSV (dengan contoh data & daftar lab)
+            </button>
           </div>
           {importResult && (
-            <div className={`rounded-xl p-3 text-sm ${importResult.errors?.length ? "bg-amber-50 border border-amber-200" : "bg-green-50 border border-green-200"}`}>
-              <p className="font-semibold text-green-700">{importResult.success} {typeLabel.toLowerCase()} berhasil ditambahkan</p>
+            <div className={`rounded-xl p-3 text-sm ${importResult.gagal > 0 ? "bg-amber-50 border border-amber-200" : "bg-green-50 border border-green-200"}`}>
+              <p className="font-semibold text-green-700">{importResult.berhasil} {typeLabel.toLowerCase()} berhasil ditambahkan</p>
+              {importResult.gagal > 0 && <p className="text-amber-700 text-xs mt-0.5">{importResult.gagal} baris gagal</p>}
               {importResult.errors?.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  <p className="font-semibold text-amber-700 text-xs">{importResult.errors.length} error:</p>
-                  {importResult.errors.slice(0, 5).map((e: string, i: number) => <p key={i} className="text-xs text-amber-600">{e}</p>)}
+                <div className="mt-2 space-y-0.5">
+                  {importResult.errors.slice(0, 5).map((e: string, i: number) => <p key={i} className="text-xs text-amber-600">• {e}</p>)}
                   {importResult.errors.length > 5 && <p className="text-xs text-amber-500">...dan {importResult.errors.length - 5} lainnya</p>}
                 </div>
               )}
@@ -597,6 +617,7 @@ function PhantomTab() {
   const { isPlp, plpLabIds } = usePlpLabFilter();
   const [search, setSearch] = useState("");
   const [showDialog, setShowDialog] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [form, setForm] = useState({ nama: "", kode: "", kondisi: "baik", stok: "1", satuan: "buah", deskripsi: "", laboratoriumId: "" });
   const { data: labsAll } = useGetLaboratorium({});
@@ -659,7 +680,8 @@ function PhantomTab() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama / kode..." className="pl-9 rounded-xl h-9 bg-slate-50" />
           </div>
-          <Button onClick={openAdd} className="rounded-xl h-9 gap-2 ml-auto"><Plus className="w-4 h-4" />Tambah Phantom</Button>
+          <Button variant="outline" onClick={() => setShowImport(true)} className="rounded-xl h-9 gap-2 text-sm ml-auto"><Upload className="w-4 h-4" />Import CSV</Button>
+          <Button onClick={openAdd} className="rounded-xl h-9 gap-2"><Plus className="w-4 h-4" />Tambah Phantom</Button>
         </div>
         <Table>
           <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
@@ -730,6 +752,8 @@ function PhantomTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportCsvDialog open={showImport} onClose={() => setShowImport(false)} type="phantom" queryKey="/api/phantom" />
     </>
   );
 }

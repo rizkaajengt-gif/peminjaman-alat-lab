@@ -3,7 +3,7 @@
  * Format upload: JSON body { csv: "...csv content..." }
  */
 import { Router } from "express";
-import { db, usersTable, alatTable, bahanTable, laboratoriumTable } from "@workspace/db";
+import { db, usersTable, alatTable, bahanTable, laboratoriumTable, phantomTable } from "@workspace/db";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 import crypto from "crypto";
 
@@ -199,6 +199,55 @@ router.post("/bahan", requireAuth, requireRole("admin", "plp", "gudang"), async 
       }
     }
     res.json({ message: `Import bahan selesai: ${berhasil} berhasil, ${gagal} gagal`, berhasil, gagal, errors });
+  } catch (e: any) {
+    res.status(500).json({ message: "Gagal memproses CSV: " + e.message });
+  }
+});
+
+// ─── IMPORT PHANTOM ───────────────────────────────────────────────────────────
+router.get("/phantom/template", requireAuth, requireRole("admin", "plp"), async (_req, res) => {
+  const labs = await db.query.laboratoriumTable.findMany({ columns: { id: true, nama: true } });
+  let info = "# TEMPLATE IMPORT PHANTOM LABORATORIUM\n";
+  info += "# Kolom wajib: kode, nama, kondisi, stok, satuan, laboratoriumId\n";
+  info += "# kondisi: baik | rusak ringan | rusak berat\n";
+  info += "# Daftar Laboratorium:\n" + labs.map(l => `# ${l.id} = ${l.nama}`).join("\n");
+  info += "\nkode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId\n";
+  info += "PH-001,Phantom Bayi Lahir,,baik,3,unit,1\n";
+  info += "PH-002,Phantom Kepala CPR,,baik,2,set,1\n";
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=template_import_phantom.csv");
+  res.send("\uFEFF" + info);
+});
+
+router.post("/phantom", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { csv } = req.body;
+    if (!csv) { res.status(400).json({ message: "Data CSV tidak ada" }); return; }
+    const { rows } = parseCsv(csv);
+    if (!rows.length) { res.status(400).json({ message: "Tidak ada data valid" }); return; }
+
+    let berhasil = 0, gagal = 0;
+    const errors: string[] = [];
+    for (const row of rows) {
+      const { kode, nama, deskripsi, kondisi, stok, satuan, laboratoriumId } = row;
+      if (!nama || !laboratoriumId) {
+        gagal++; errors.push(`Baris ${nama || kode || "?"}: nama dan laboratoriumId wajib`); continue;
+      }
+      try {
+        await db.insert(phantomTable).values({
+          kode: kode || null, nama,
+          deskripsi: deskripsi || null,
+          kondisi: (kondisi || "baik") as any,
+          stok: parseInt(stok) || 0, stokTersedia: parseInt(stok) || 0,
+          satuan: satuan || "unit",
+          laboratoriumId: parseInt(laboratoriumId),
+        });
+        berhasil++;
+      } catch (e: any) {
+        gagal++; errors.push(`${kode || nama}: ${e.message}`);
+      }
+    }
+    res.json({ message: `Import phantom selesai: ${berhasil} berhasil, ${gagal} gagal`, berhasil, gagal, errors });
   } catch (e: any) {
     res.status(500).json({ message: "Gagal memproses CSV: " + e.message });
   }
