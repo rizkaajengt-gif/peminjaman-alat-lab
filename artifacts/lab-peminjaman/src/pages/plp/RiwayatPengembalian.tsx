@@ -159,9 +159,10 @@ function PeminjamanAktifTab() {
             ) : aktifAlat.map((p: any) => {
               const noWa = p.user?.noWa || p.user?.noHp;
               const late = isLate(p);
+              const daftarAlat = p.items?.map((i: any) => `- ${i.alat?.nama}: ${i.jumlah} unit`).join("\n") || "";
               const pesan = late
-                ? `Halo ${p.user?.nama}, peminjaman alat Anda (No. ${p.noPeminjaman}) SUDAH MELEWATI batas waktu pengembalian (${fmt(p.tanggalKembali)}). Mohon segera kembalikan ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`
-                : `Halo ${p.user?.nama}, ini pengingat bahwa peminjaman alat Anda (No. ${p.noPeminjaman}) perlu dikembalikan pada ${fmt(p.tanggalKembali)}. Mohon kembalikan tepat waktu ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
+                ? `Halo ${p.user?.nama}, peminjaman alat Anda (No. ${p.noPeminjaman}) SUDAH MELEWATI batas waktu pengembalian (${fmt(p.tanggalKembali)}).\n\nDaftar barang yang dipinjam:\n${daftarAlat}\n\nMohon segera kembalikan ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`
+                : `Halo ${p.user?.nama}, ini pengingat bahwa peminjaman alat Anda (No. ${p.noPeminjaman}) perlu dikembalikan pada ${fmt(p.tanggalKembali)}.\n\nDaftar barang yang dipinjam:\n${daftarAlat}\n\nMohon kembalikan tepat waktu ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
               return (
                 <TableRow key={p.id} className={`border-slate-50 ${late ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-slate-50/50"}`}>
                   <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
@@ -220,9 +221,10 @@ function PeminjamanAktifTab() {
             ) : aktifPhantom.map((p: any) => {
               const noWa = p.user?.noWa || p.user?.noHp;
               const late = isLate(p);
+              const daftarPhantom = p.items?.map((i: any) => `- ${i.phantom?.nama}: ${i.jumlah} unit`).join("\n") || "";
               const pesan = late
-                ? `Halo ${p.user?.nama}, peminjaman phantom Anda (No. ${p.noPeminjaman}) SUDAH MELEWATI batas waktu pengembalian (${fmt(p.tanggalKembali)}). Mohon segera kembalikan ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`
-                : `Halo ${p.user?.nama}, ini pengingat bahwa peminjaman phantom Anda (No. ${p.noPeminjaman}) perlu dikembalikan pada ${fmt(p.tanggalKembali)}. Mohon kembalikan tepat waktu ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
+                ? `Halo ${p.user?.nama}, peminjaman phantom Anda (No. ${p.noPeminjaman}) SUDAH MELEWATI batas waktu pengembalian (${fmt(p.tanggalKembali)}).\n\nDaftar phantom yang dipinjam:\n${daftarPhantom}\n\nMohon segera kembalikan ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`
+                : `Halo ${p.user?.nama}, ini pengingat bahwa peminjaman phantom Anda (No. ${p.noPeminjaman}) perlu dikembalikan pada ${fmt(p.tanggalKembali)}.\n\nDaftar phantom yang dipinjam:\n${daftarPhantom}\n\nMohon kembalikan tepat waktu ke laboratorium ${p.laboratorium?.nama || ""}. Terima kasih.`;
               return (
                 <TableRow key={p.id} className={`border-slate-50 ${late ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-slate-50/50"}`}>
                   <TableCell className="font-mono text-xs font-bold text-primary">{p.noPeminjaman}</TableCell>
@@ -310,7 +312,7 @@ function VerifikasiPengembalianTab() {
                   <div className="font-medium text-sm">{p.user?.nama}</div>
                   <div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.nip || p.user?.role}</div>
                   {(p.user?.noWa || p.user?.noHp) && (
-                    <a href={`https://wa.me/${toWaNum((p.user.noWa || p.user.noHp))}?text=${encodeURIComponent(`Halo ${p.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${p.noPeminjaman}). Terima kasih.`)}`}
+                    <a href={`https://wa.me/${toWaNum((p.user.noWa || p.user.noHp))}?text=${encodeURIComponent(`Halo ${p.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${p.noPeminjaman}).\n\nDaftar barang yang dipinjam:\n${p.items?.map((i: any) => `- ${i.alat?.nama}: ${i.jumlah} unit`).join("\n") || ""}\n\nTerima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-800 mt-0.5 font-medium">
                       <MessageCircle className="w-3 h-3" />Hubungi WA
@@ -340,7 +342,7 @@ function VerifikasiPengembalianTab() {
                 {(selected.user?.noWa || selected.user?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${toWaNum((selected.user.noWa || selected.user.noHp))}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${selected.noPeminjaman}) ke laboratorium ${selected.laboratorium?.nama || ""}. Terima kasih.`)}`}
+                    <a href={`https://wa.me/${toWaNum((selected.user.noWa || selected.user.noHp))}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${selected.noPeminjaman}) ke laboratorium ${selected.laboratorium?.nama || ""}.\n\nDaftar barang yang dipinjam:\n${selected.items?.map((i: any) => `- ${i.alat?.nama}: ${i.jumlah} unit`).join("\n") || ""}\n\nTerima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-800 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 hover:bg-green-100">
                       <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
@@ -617,7 +619,7 @@ function VerifikasiPengembalianPhantomTab() {
                 {(selected.user?.noWa || selected.user?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${toWaNum((selected.user.noWa || selected.user.noHp))}?text=${encodeURIComponent(`Halo ${selected.user.nama}, tolong segera kembalikan phantom yang Anda pinjam (No. ${selected.noPeminjaman}). Terima kasih.`)}`}
+                    <a href={`https://wa.me/${toWaNum((selected.user.noWa || selected.user.noHp))}?text=${encodeURIComponent(`Halo ${selected.user.nama}, tolong segera kembalikan phantom yang Anda pinjam (No. ${selected.noPeminjaman}) ke laboratorium ${selected.laboratorium?.nama || ""}.\n\nDaftar phantom yang dipinjam:\n${selected.items?.map((i: any) => `- ${i.phantom?.nama}: ${i.jumlah} unit`).join("\n") || ""}\n\nTerima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg px-2.5 py-1 font-medium transition-colors">
                       <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
