@@ -30,47 +30,75 @@ async function fetchJson(url: string) {
   return res.json();
 }
 
-function printLogbook(title: string, labNama: string, subTitle: string, records: any[]) {
+const LOGO_URL = `${import.meta.env.BASE_URL}logo-poltekkes.png`;
+
+function printLogbook(title: string, labNama: string, subTitle: string, records: any[], startDate?: string, endDate?: string) {
   const rows = records.map((r, i) => `
     <tr>
-      <td>${i + 1}</td>
+      <td style="text-align:center">${i + 1}</td>
       <td>${r.hariTanggal}</td>
-      <td>${r.jamMulai}</td>
-      <td>${r.jamSelesai}</td>
+      <td style="text-align:center">${r.jamMulai}</td>
+      <td style="text-align:center">${r.jamSelesai}</td>
       <td>${r.namaPengguna}</td>
       <td>${r.nimNip}</td>
       <td>${r.tujuan}</td>
     </tr>
   `).join("");
 
+  const periodeLabel = startDate && endDate
+    ? `${new Date(startDate).toLocaleDateString("id-ID", { day:"2-digit", month:"long", year:"numeric" })} s/d ${new Date(endDate).toLocaleDateString("id-ID", { day:"2-digit", month:"long", year:"numeric" })}`
+    : "";
+
   const html = `<!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8"><title>Log Book ${title}</title>
 <style>
-  body { font-family: Arial, sans-serif; font-size: 12px; margin: 20mm; color: #000; }
-  h2 { font-size: 14px; font-weight: bold; text-transform: uppercase; margin: 0 0 4px 0; }
-  .sub { font-size: 12px; margin: 2px 0; }
-  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-  th, td { border: 1px solid #000; padding: 6px 8px; text-align: left; vertical-align: top; }
-  th { background: #f0f0f0; font-weight: bold; }
-  tr:nth-child(even) { background: #fafafa; }
-  @media print { body { margin: 10mm; } }
+  body { font-family: Arial, sans-serif; font-size: 12px; margin: 15mm 20mm; color: #000; }
+  .kop { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #0f766e; padding-bottom: 12px; margin-bottom: 16px; }
+  .kop img { width: 64px; height: 64px; object-fit: contain; }
+  .kop-text { flex: 1; }
+  .kop-instansi { font-size: 10px; color: #666; font-weight: 600; letter-spacing: 0.04em; margin: 0; }
+  .kop-nama { font-size: 18px; font-weight: 900; color: #111; margin: 2px 0 0 0; line-height: 1.2; }
+  .kop-alamat { font-size: 10px; color: #666; margin: 3px 0 0 0; }
+  .judul { text-align: center; margin-bottom: 14px; }
+  .judul h2 { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 4px 0; }
+  .judul .info { font-size: 12px; margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #555; padding: 6px 8px; text-align: left; vertical-align: top; font-size: 11px; }
+  th { background: #e8f5f4; font-weight: bold; text-align: center; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  @media print { body { margin: 10mm 15mm; } }
 </style></head>
 <body>
-<h2>LOG BOOK PENGGUNAAN PERALATAN LABORATORIUM</h2>
-<p class="sub"><strong>Nama Laboratorium:</strong> ${labNama}</p>
-<p class="sub"><strong>${title}:</strong> ${subTitle}</p>
+
+<div class="kop">
+  <img src="${LOGO_URL}" onerror="this.style.display='none'" alt="Logo" />
+  <div class="kop-text">
+    <p class="kop-instansi">KEMENTERIAN KESEHATAN REPUBLIK INDONESIA</p>
+    <p class="kop-nama">POLTEKKES KEMENKES TASIKMALAYA</p>
+    <p class="kop-alamat">Jl. Cilolohan No. 35, Kahuripan, Tawang, Tasikmalaya 46115 &middot; Telp: (0265) 340186</p>
+  </div>
+</div>
+
+<div class="judul">
+  <h2>LOG BOOK PENGGUNAAN ${title === "Ruangan" ? "RUANGAN" : title === "Phantom" ? "PHANTOM" : "PERALATAN"} LABORATORIUM</h2>
+  <p class="info"><strong>Laboratorium:</strong> ${labNama}</p>
+  ${title !== "Ruangan" ? `<p class="info"><strong>${title}:</strong> ${subTitle}</p>` : ""}
+  ${periodeLabel ? `<p class="info"><strong>Periode:</strong> ${periodeLabel}</p>` : ""}
+</div>
+
 <table>
   <thead><tr>
-    <th style="width:40px">No</th>
-    <th style="width:130px">Hari/Tanggal</th>
-    <th style="width:70px">Jam Mulai</th>
-    <th style="width:70px">Jam Selesai</th>
+    <th style="width:36px">No</th>
+    <th style="width:120px">Hari/Tanggal</th>
+    <th style="width:65px">Jam Mulai</th>
+    <th style="width:65px">Jam Selesai</th>
     <th>Nama Pengguna</th>
-    <th>NIM/NIP/Instansi</th>
+    <th style="width:110px">NIM/NIP/Instansi</th>
     <th>Tujuan Penggunaan</th>
   </tr></thead>
   <tbody>${rows}</tbody>
 </table>
+
 </body></html>`;
 
   const w = window.open("", "_blank");
@@ -130,7 +158,7 @@ function LogbookAlat({ labs }: { labs: any[] }) {
           <Label className="text-xs font-medium">Sampai</Label>
           <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-9 rounded-xl text-sm w-36" />
         </div>
-        <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={() => printLogbook("Alat", labNama, alatNama, records)}>
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={() => printLogbook("Alat", labNama, alatNama, records, startDate, endDate)}>
           <Printer className="w-4 h-4" />Cetak Log Book
         </Button>
       </div>
@@ -214,7 +242,7 @@ function LogbookRuangan({ labs }: { labs: any[] }) {
           <Label className="text-xs font-medium">Sampai</Label>
           <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-9 rounded-xl text-sm w-36" />
         </div>
-        <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={() => printLogbook("Ruangan", labNama, labNama, records)}>
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={() => printLogbook("Ruangan", labNama, labNama, records, startDate, endDate)}>
           <Printer className="w-4 h-4" />Cetak Log Book
         </Button>
       </div>
@@ -298,7 +326,7 @@ function LogbookPhantom({ labs }: { labs: any[] }) {
           <Label className="text-xs font-medium">Sampai</Label>
           <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-9 rounded-xl text-sm w-36" />
         </div>
-        <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={() => printLogbook("Phantom", labNama, "Semua Phantom", records)}>
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={() => printLogbook("Phantom", labNama, "Semua Phantom", records, startDate, endDate)}>
           <Printer className="w-4 h-4" />Cetak Log Book
         </Button>
       </div>
