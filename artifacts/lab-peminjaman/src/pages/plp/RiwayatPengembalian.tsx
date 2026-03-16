@@ -22,6 +22,13 @@ function fmt(d?: string) {
   try { return format(new Date(d), "dd MMM yyyy", { locale: id }); } catch { return d; }
 }
 
+function toWaNum(num: string) {
+  const d = num.replace(/\D/g, "");
+  if (d.startsWith("0")) return "62" + d.slice(1);
+  if (d.startsWith("62")) return d;
+  return "62" + d;
+}
+
 function openPrint(type: string, itemId: number) {
   window.open(`${import.meta.env.BASE_URL}print/${type}/${itemId}`, "_blank");
 }
@@ -172,7 +179,7 @@ function PeminjamanAktifTab() {
                   <TableCell className="text-right">
                     {noWa ? (
                       <a
-                        href={`https://wa.me/${noWa.replace(/\D/g, "")}?text=${encodeURIComponent(pesan)}`}
+                        href={`https://wa.me/${toWaNum(noWa)}?text=${encodeURIComponent(pesan)}`}
                         target="_blank" rel="noopener noreferrer"
                         className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap border ${late ? "bg-red-50 text-red-700 border-red-300 hover:bg-red-100" : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"}`}
                       >
@@ -233,7 +240,7 @@ function PeminjamanAktifTab() {
                   <TableCell className="text-right">
                     {noWa ? (
                       <a
-                        href={`https://wa.me/${noWa.replace(/\D/g, "")}?text=${encodeURIComponent(pesan)}`}
+                        href={`https://wa.me/${toWaNum(noWa)}?text=${encodeURIComponent(pesan)}`}
                         target="_blank" rel="noopener noreferrer"
                         className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap border ${late ? "bg-red-50 text-red-700 border-red-300 hover:bg-red-100" : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"}`}
                       >
@@ -303,7 +310,7 @@ function VerifikasiPengembalianTab() {
                   <div className="font-medium text-sm">{p.user?.nama}</div>
                   <div className="text-xs text-muted-foreground">{p.user?.nim || p.user?.nip || p.user?.role}</div>
                   {(p.user?.noWa || p.user?.noHp) && (
-                    <a href={`https://wa.me/${(p.user.noWa || p.user.noHp).replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${p.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${p.noPeminjaman}). Terima kasih.`)}`}
+                    <a href={`https://wa.me/${toWaNum((p.user.noWa || p.user.noHp))}?text=${encodeURIComponent(`Halo ${p.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${p.noPeminjaman}). Terima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-800 mt-0.5 font-medium">
                       <MessageCircle className="w-3 h-3" />Hubungi WA
@@ -333,7 +340,7 @@ function VerifikasiPengembalianTab() {
                 {(selected.user?.noWa || selected.user?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${(selected.user.noWa || selected.user.noHp).replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${selected.noPeminjaman}) ke laboratorium ${selected.laboratorium?.nama || ""}. Terima kasih.`)}`}
+                    <a href={`https://wa.me/${toWaNum((selected.user.noWa || selected.user.noHp))}?text=${encodeURIComponent(`Halo ${selected.user?.nama}, mohon segera kembalikan alat peminjaman Anda (No. ${selected.noPeminjaman}) ke laboratorium ${selected.laboratorium?.nama || ""}. Terima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-800 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 hover:bg-green-100">
                       <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
@@ -581,7 +588,7 @@ function VerifikasiPengembalianPhantomTab() {
                   <div className="font-medium text-sm">{p.user?.nama}</div>
                   <div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div>
                   {(p.user?.noWa || p.user?.noHp) && (
-                    <a href={`https://wa.me/${(p.user.noWa || p.user.noHp).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                    <a href={`https://wa.me/${toWaNum((p.user.noWa || p.user.noHp))}`} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium mt-0.5">
                       <MessageCircle className="w-3 h-3" />{p.user.noWa || p.user.noHp}
                     </a>
@@ -610,7 +617,7 @@ function VerifikasiPengembalianPhantomTab() {
                 {(selected.user?.noWa || selected.user?.noHp) && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">WhatsApp</span>
-                    <a href={`https://wa.me/${(selected.user.noWa || selected.user.noHp).replace(/\D/g, "")}?text=${encodeURIComponent(`Halo ${selected.user.nama}, tolong segera kembalikan phantom yang Anda pinjam (No. ${selected.noPeminjaman}). Terima kasih.`)}`}
+                    <a href={`https://wa.me/${toWaNum((selected.user.noWa || selected.user.noHp))}?text=${encodeURIComponent(`Halo ${selected.user.nama}, tolong segera kembalikan phantom yang Anda pinjam (No. ${selected.noPeminjaman}). Terima kasih.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg px-2.5 py-1 font-medium transition-colors">
                       <MessageCircle className="w-3.5 h-3.5" />Hubungi via WA
@@ -684,7 +691,7 @@ function RiwayatPhantomTab() {
                 <div className="font-medium text-sm">{p.user?.nama}</div>
                 <div className="text-xs text-muted-foreground capitalize">{p.user?.role}</div>
                 {(p.user?.noWa || p.user?.noHp) && (
-                  <a href={`https://wa.me/${(p.user.noWa || p.user.noHp).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`https://wa.me/${toWaNum((p.user.noWa || p.user.noHp))}`} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium mt-0.5">
                     <MessageCircle className="w-3 h-3" />{p.user.noWa || p.user.noHp}
                   </a>
