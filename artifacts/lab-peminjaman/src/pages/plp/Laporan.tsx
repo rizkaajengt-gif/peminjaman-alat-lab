@@ -273,15 +273,18 @@ export default function PlpLaporan() {
           <Download className="w-4 h-4 text-primary" />Export Data ke CSV
         </h3>
         <p className="text-xs text-muted-foreground mb-3">Data yang diexport sudah otomatis difilter hanya untuk lab yang Anda tangani{filterLab !== "_all_" ? " (lab yang dipilih)" : ""}.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
           <Button variant="outline" onClick={exportAlatCsv} className="h-10 rounded-xl gap-2 justify-start text-sm">
-            <Download className="w-3.5 h-3.5 text-purple-600 shrink-0" />Laporan Peminjaman Alat
+            <Download className="w-3.5 h-3.5 text-purple-600 shrink-0" />Peminjaman Alat
           </Button>
           <Button variant="outline" onClick={exportRuanganCsv} className="h-10 rounded-xl gap-2 justify-start text-sm">
-            <Download className="w-3.5 h-3.5 text-teal-600 shrink-0" />Laporan Peminjaman Ruangan
+            <Download className="w-3.5 h-3.5 text-teal-600 shrink-0" />Peminjaman Ruangan
+          </Button>
+          <Button variant="outline" onClick={() => { const p = new URLSearchParams(); if (filterLab !== "_all_") p.set("labId", filterLab); window.open(`/api/export/peminjaman-phantom?${p}`, "_blank"); }} className="h-10 rounded-xl gap-2 justify-start text-sm">
+            <Download className="w-3.5 h-3.5 text-pink-600 shrink-0" />Peminjaman Phantom
           </Button>
           <Button variant="outline" onClick={exportBahanCsv} className="h-10 rounded-xl gap-2 justify-start text-sm">
-            <Download className="w-3.5 h-3.5 text-amber-600 shrink-0" />Laporan Permintaan Bahan
+            <Download className="w-3.5 h-3.5 text-amber-600 shrink-0" />Permintaan Bahan
           </Button>
         </div>
       </Card>

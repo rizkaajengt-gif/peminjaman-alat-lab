@@ -35,6 +35,7 @@ import PeminjamanPhantom from "./pages/mahasiswa/PeminjamanPhantom";
 import PrintPermintaan from "./pages/shared/PrintPermintaan";
 import PrintPeminjaman from "./pages/shared/PrintPeminjaman";
 import PrintPeminjamanPhantom from "./pages/shared/PrintPeminjamanPhantom";
+import PrintPeminjamanRuangan from "./pages/shared/PrintPeminjamanRuangan";
 import Profil from "./pages/profil/Profil";
 
 import NotFound from "./pages/not-found";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/print/permintaan-bahan/:id" component={PrintPermintaan} />
       <Route path="/print/peminjaman-alat/:id" component={PrintPeminjaman} />
       <Route path="/print/peminjaman-phantom/:id" component={PrintPeminjamanPhantom} />
+      <Route path="/print/peminjaman-ruangan/:id" component={PrintPeminjamanRuangan} />
 
       <Route path="/dashboard">{() => <ProtectedRoute component={DashboardHome} />}</Route>
 

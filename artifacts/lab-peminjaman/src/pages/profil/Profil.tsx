@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, User, KeyRound, Save, AlertTriangle, CheckCircle2, PenLine, Phone, MessageCircle } from "lucide-react";
+import { Loader2, User, KeyRound, Save, AlertTriangle, CheckCircle2, PenLine, Phone, MessageCircle, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", mahasiswa: "Mahasiswa", plp: "PLP", gudang: "Gudang", dosen: "Dosen" };
@@ -28,6 +28,7 @@ export default function Profil() {
   const [nama, setNama] = useState(user?.nama || "");
   const [noHp, setNoHp] = useState((user as any)?.noHp || "");
   const [noWa, setNoWa] = useState((user as any)?.noWa || "");
+  const [callmebotKey, setCallmebotKey] = useState((user as any)?.callmebotKey || "");
   const [tandaTangan, setTandaTangan] = useState<string | null>((user as any)?.tandaTangan || null);
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -48,6 +49,7 @@ export default function Profil() {
           nama: nama.trim(),
           noHp: noHp.trim(),
           noWa: noWa.trim(),
+          callmebotKey: callmebotKey.trim(),
           tandaTangan,
         }),
       });
@@ -144,6 +146,18 @@ export default function Profil() {
                 <Input value={noWa} onChange={e => setNoWa(e.target.value)} className="rounded-xl h-10 border-green-200 focus:border-green-400" placeholder="628xx-xxxx-xxxx" />
                 <p className="text-[10px] text-muted-foreground">Format: 628xxxxxxxxx (tanpa +)</p>
               </div>
+            </div>
+
+            {/* CallMeBot Key */}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Bell className="w-3.5 h-3.5 text-green-600" />
+                CallMeBot API Key <span className="text-[10px] font-normal text-muted-foreground">(untuk notifikasi WA otomatis)</span>
+              </Label>
+              <Input value={callmebotKey} onChange={e => setCallmebotKey(e.target.value)} className="rounded-xl h-10 font-mono text-sm" placeholder="Contoh: 1234567" />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Cara mendapatkan key: simpan nomor <span className="font-semibold">+34 644 44 53 84</span> di WA, lalu kirim pesan <span className="font-mono bg-slate-100 px-1 rounded">I allow callmebot to send me messages</span>. Key akan dikirimkan ke WA Anda.
+              </p>
             </div>
 
             {/* Tanda Tangan */}

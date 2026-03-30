@@ -39,6 +39,33 @@ export function formatPesanPeminjamanAlat(opts: {
   return `🔔 *SIPELAB - Pengajuan Peminjaman Alat*\n\nNo: ${opts.noPeminjaman}\nPeminjam: ${opts.namaPeminjam}\nLaboratorium: ${opts.laboratorium}\nKeperluan: ${opts.keperluan}\nTgl pinjam: ${opts.tanggalPinjam}\n\nSilakan verifikasi di SIPELAB.`;
 }
 
+export function formatPesanStatusPeminjaman(opts: {
+  jenis: "alat" | "phantom" | "ruangan";
+  noPeminjaman: string;
+  namaPeminjam: string;
+  status: string;
+  catatan?: string | null;
+  laboratorium?: string;
+}): string {
+  const statusLabel: Record<string, string> = {
+    disetujui: "✅ DISETUJUI",
+    ditolak: "❌ DITOLAK",
+    dipinjam: "📦 DIPINJAM",
+    dikembalikan: "✔️ DIKEMBALIKAN",
+  };
+  const jenisLabel: Record<string, string> = {
+    alat: "Peminjaman Alat",
+    phantom: "Peminjaman Phantom",
+    ruangan: "Peminjaman Ruangan",
+  };
+  const label = statusLabel[opts.status] || opts.status.toUpperCase();
+  let msg = `🔔 *SIPELAB - Update ${jenisLabel[opts.jenis]}*\n\nNo: ${opts.noPeminjaman}\nPeminjam: ${opts.namaPeminjam}\nStatus: ${label}`;
+  if (opts.laboratorium) msg += `\nLaboratorium: ${opts.laboratorium}`;
+  if (opts.catatan) msg += `\nCatatan PLP: ${opts.catatan}`;
+  msg += `\n\nSilakan cek riwayat di SIPELAB untuk detail lengkap.`;
+  return msg;
+}
+
 export function formatPesanPeminjamanRuangan(opts: {
   noPeminjaman: string;
   namaPeminjam: string;

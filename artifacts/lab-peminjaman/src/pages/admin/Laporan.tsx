@@ -275,10 +275,12 @@ export default function AdminLaporan() {
         <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
           <Download className="w-4 h-4 text-primary" />Export Data ke CSV
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {[
-            { label: "Laporan Peminjaman Alat", url: "/api/export/peminjaman-alat" },
-            { label: "Laporan Permintaan Bahan", url: "/api/export/permintaan-bahan" },
+            { label: "Peminjaman Alat", url: "/api/export/peminjaman-alat" },
+            { label: "Peminjaman Ruangan", url: "/api/export/peminjaman-ruangan" },
+            { label: "Peminjaman Phantom", url: "/api/export/peminjaman-phantom" },
+            { label: "Permintaan Bahan", url: "/api/export/permintaan-bahan" },
             { label: "Inventaris Alat", url: "/api/export/alat" },
             { label: "Data Pengguna", url: "/api/export/users" },
           ].map(e => (

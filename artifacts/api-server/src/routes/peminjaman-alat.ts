@@ -3,6 +3,7 @@ import { db, peminjamanAlatTable, peminjamanAlatItemTable, alatTable } from "@wo
 import { eq, and, inArray, SQL } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 import { getPlpLabIds } from "../lib/plp-labs.js";
+import { kirimNotifWa, formatPesanStatusPeminjaman } from "../lib/notifikasi.js";
 
 const router = Router();
 
@@ -139,6 +140,17 @@ router.put("/:id/status", requireAuth, requireRole("plp", "admin"), async (req: 
       where: eq(peminjamanAlatTable.id, updated.id),
       with: { user: true, laboratorium: true, items: { with: { alat: true } } },
     });
+
+    // Kirim notif WA otomatis ke peminjam (non-blocking)
+    const userResult = result?.user as any;
+    if (userResult?.noWa && userResult?.callmebotKey && ["disetujui", "ditolak", "dipinjam", "dikembalikan"].includes(status)) {
+      void kirimNotifWa(userResult.noWa, userResult.callmebotKey, formatPesanStatusPeminjaman({
+        jenis: "alat", noPeminjaman: result!.noPeminjaman,
+        namaPeminjam: userResult.nama, status,
+        catatan: updated.catatanPlp, laboratorium: result?.laboratorium?.nama,
+      }));
+    }
+
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });

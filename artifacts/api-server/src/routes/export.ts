@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, alatTable, bahanTable, usersTable, laboratoriumTable, peminjamanAlatTable, permintaanBahanTable, jurusanTable } from "@workspace/db";
+import { db, alatTable, bahanTable, usersTable, laboratoriumTable, peminjamanAlatTable, permintaanBahanTable, jurusanTable, peminjamanRuanganTable, peminjamanPhantomTable } from "@workspace/db";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
@@ -137,6 +137,59 @@ router.get("/permintaan-bahan", requireAuth, requireRole("admin", "gudang", "plp
     );
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename=laporan_permintaan_bahan_${new Date().toISOString().slice(0,10)}.csv`);
+    res.send("\uFEFF" + csv);
+  } catch (e) {
+    res.status(500).json({ message: "Gagal export" });
+  }
+});
+
+// Export peminjaman ruangan
+router.get("/peminjaman-ruangan", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { labId } = req.query;
+    let data = await db.query.peminjamanRuanganTable.findMany({
+      with: { user: { with: { jurusan: true } }, laboratorium: true },
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+    });
+    if (labId) data = data.filter(p => p.laboratoriumId === Number(labId));
+    const csv = toCsv(
+      ["No. Peminjaman", "Nama Pemohon", "Jurusan", "Laboratorium", "Kategori", "Judul Kegiatan", "Tgl Mulai", "Tgl Selesai", "Waktu Mulai", "Waktu Selesai", "Jumlah Peserta", "Status", "Keperluan"],
+      data.map(p => [
+        p.noPeminjaman, p.user?.nama || "", (p.user as any)?.jurusan?.nama || "",
+        p.laboratorium?.nama || "", p.kategori || "",
+        (p as any).judulKegiatan || "", p.tanggalMulai, p.tanggalSelesai,
+        p.waktuMulai, p.waktuSelesai, String((p as any).jumlahPeserta || ""),
+        p.status, p.keperluan
+      ])
+    );
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=laporan_peminjaman_ruangan_${new Date().toISOString().slice(0,10)}.csv`);
+    res.send("\uFEFF" + csv);
+  } catch (e) {
+    res.status(500).json({ message: "Gagal export" });
+  }
+});
+
+// Export peminjaman phantom
+router.get("/peminjaman-phantom", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { labId } = req.query;
+    let data = await db.query.peminjamanPhantomTable.findMany({
+      with: { user: { with: { jurusan: true } }, laboratorium: true, items: { with: { phantom: true } } },
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+    });
+    if (labId) data = data.filter(p => p.laboratoriumId === Number(labId));
+    const csv = toCsv(
+      ["No. Peminjaman", "Nama Peminjam", "Jurusan", "Laboratorium", "Phantom", "Tgl Pinjam", "Tgl Kembali", "Status", "Keperluan"],
+      data.map(p => [
+        p.noPeminjaman, p.user?.nama || "", (p.user as any)?.jurusan?.nama || "",
+        p.laboratorium?.nama || "",
+        p.items?.map((i: any) => `${i.phantom?.nama}(${i.jumlah})`).join("; ") || "",
+        p.tanggalPinjam, p.tanggalKembali, p.status, p.keperluan
+      ])
+    );
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=laporan_peminjaman_phantom_${new Date().toISOString().slice(0,10)}.csv`);
     res.send("\uFEFF" + csv);
   } catch (e) {
     res.status(500).json({ message: "Gagal export" });

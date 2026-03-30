@@ -3,7 +3,7 @@ import { db, peminjamanRuanganTable, usersTable } from "@workspace/db";
 import { eq, and, inArray, SQL } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 import { getPlpLabIds } from "../lib/plp-labs.js";
-import { kirimNotifWa, formatPesanPeminjamanRuangan } from "../lib/notifikasi.js";
+import { kirimNotifWa, formatPesanPeminjamanRuangan, formatPesanStatusPeminjaman } from "../lib/notifikasi.js";
 
 const router = Router();
 
@@ -131,6 +131,17 @@ router.put("/:id/status", requireAuth, requireRole("plp", "admin"), async (req: 
       where: eq(peminjamanRuanganTable.id, updated.id),
       with: { user: true, laboratorium: true },
     });
+
+    // Kirim notif WA otomatis ke pemohon (non-blocking)
+    const userResult = result?.user as any;
+    if (userResult?.noWa && userResult?.callmebotKey && ["disetujui", "ditolak"].includes(status)) {
+      void kirimNotifWa(userResult.noWa, userResult.callmebotKey, formatPesanStatusPeminjaman({
+        jenis: "ruangan", noPeminjaman: result!.noPeminjaman,
+        namaPeminjam: userResult.nama, status,
+        catatan: catatan, laboratorium: result?.laboratorium?.nama,
+      }));
+    }
+
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
