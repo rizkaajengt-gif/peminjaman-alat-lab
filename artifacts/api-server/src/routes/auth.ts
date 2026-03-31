@@ -43,6 +43,12 @@ router.post("/login", async (req, res) => {
       return;
     }
 
+    if (user.isBlocked) {
+      const alasan = user.catatanBlokir ? `: ${user.catatanBlokir}` : "";
+      res.status(401).json({ message: `Akun Anda telah diblokir${alasan}. Hubungi administrator untuk informasi lebih lanjut.` });
+      return;
+    }
+
     (req.session as any).userId = user.id;
     const { password: _, ...userWithoutPassword } = user;
     res.json({ user: userWithoutPassword, message: "Login berhasil" });

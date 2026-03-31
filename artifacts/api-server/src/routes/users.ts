@@ -156,4 +156,19 @@ router.put("/:id/verify", requireAuth, requireRole("admin", "plp"), async (req: 
   }
 });
 
+router.put("/:id/blokir", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
+  try {
+    const { isBlocked, catatanBlokir } = req.body;
+    const [user] = await db.update(usersTable)
+      .set({ isBlocked: Boolean(isBlocked), catatanBlokir: catatanBlokir || null, updatedAt: new Date() })
+      .where(eq(usersTable.id, Number(req.params.id)))
+      .returning();
+    if (!user) { res.status(404).json({ message: "User tidak ditemukan" }); return; }
+    const { password: _, ...rest } = user;
+    res.json(rest);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;

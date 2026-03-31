@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, laboratoriumTable, alatTable, bahanTable, usersTable, peminjamanAlatTable, peminjamanRuanganTable, permintaanBahanTable, plpLaboratoriumTable, peminjamanPhantomTable, phantomTable, peminjamanAlatItemTable, peminjamanPhantomItemTable } from "@workspace/db";
-import { eq, and, gte, lte, count, inArray, sql } from "drizzle-orm";
+import { eq, and, gte, lte, lt, count, inArray, sql, or } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 
 async function getPlpLabIds(userId: number): Promise<number[]> {
@@ -29,6 +29,14 @@ router.get("/statistik", requireAuth, async (req: AuthRequest, res) => {
     const [prWaiting] = await db.select({ count: count() }).from(peminjamanRuanganTable).where(eq(peminjamanRuanganTable.status, "menunggu"));
     const [pbWaiting] = await db.select({ count: count() }).from(permintaanBahanTable).where(eq(permintaanBahanTable.status, "menunggu"));
 
+    const today = now.toISOString().split("T")[0];
+    const [alatTerlambat] = await db.select({ count: count() }).from(peminjamanAlatTable).where(
+      and(lt(peminjamanAlatTable.tanggalKembali, today), or(eq(peminjamanAlatTable.status, "dipinjam"), eq(peminjamanAlatTable.status, "disetujui")))
+    );
+    const [phantomTerlambat] = await db.select({ count: count() }).from(peminjamanPhantomTable).where(
+      and(lt(peminjamanPhantomTable.tanggalKembali, today), or(eq(peminjamanPhantomTable.status, "dipinjam"), eq(peminjamanPhantomTable.status, "disetujui")))
+    );
+
     res.json({
       totalLaboratorium: Number(labs.count),
       totalAlat: Number(alat.count),
@@ -40,6 +48,7 @@ router.get("/statistik", requireAuth, async (req: AuthRequest, res) => {
       peminjamanAlatMenunggu: Number(paWaiting.count),
       peminjamanRuanganMenunggu: Number(prWaiting.count),
       permintaanBahanMenunggu: Number(pbWaiting.count),
+      peminjamaTerlambat: Number(alatTerlambat.count) + Number(phantomTerlambat.count),
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });

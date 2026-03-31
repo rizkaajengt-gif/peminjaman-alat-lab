@@ -127,3 +127,18 @@ lib/
 - `berita` - News posts
 - `galeri` - Photo/video gallery
 - `dokumen` - Lab documents
+
+## Recent Changes (2026-03-31)
+
+### New Features Added
+1. **Grafik Tren Peminjaman di Dashboard Admin** — Area chart Recharts showing monthly trends (Alat/Ruangan/Bahan) for the current year. Data fetched from `/api/laporan/peminjaman?periode=bulanan`. Includes link to full Laporan page.
+
+2. **Sistem Blokir/Blacklist Pengguna** — Admin can block users from logging in:
+   - New DB columns: `is_blocked` (boolean) and `catatan_blokir` (text) on `users` table
+   - New API: `PUT /api/users/:id/blokir` (requires admin role)
+   - Login check: blocked users get a descriptive error message with the reason
+   - Admin Users page: shows "Diblokir" badge, dropdown items "Blokir Akun" (with reason dialog) and "Cabut Blokir"
+
+3. **Indikator Keterlambatan Pengembalian di Dashboard** — New `peminjamaTerlambat` field in `/api/laporan/statistik` response counts active borrowings (alat + phantom) past their return date:
+   - Admin Dashboard: shows red alert card with count and link to pengembalian
+   - PLP Dashboard: added "Terlambat Dikembalikan" stat card + red alert card

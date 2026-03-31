@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, MoreHorizontal, CheckCircle2, XCircle, Pencil, Trash2, UserCog, Upload, Download, KeyRound, AlertTriangle, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
+import { Loader2, Plus, Search, MoreHorizontal, CheckCircle2, XCircle, Pencil, Trash2, UserCog, Upload, Download, KeyRound, AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, ShieldBan, ShieldCheck } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 10;
@@ -56,6 +57,11 @@ export default function AdminUsers() {
   const [nonaktifLoading, setNonaktifLoading] = useState(false);
   const [nonaktifResult, setNonaktifResult] = useState<string | null>(null);
 
+  const [showBlokirDialog, setShowBlokirDialog] = useState(false);
+  const [blokirUser, setBlokirUser] = useState<any>(null);
+  const [blokirCatatan, setBlokirCatatan] = useState("");
+  const [blokirLoading, setBlokirLoading] = useState(false);
+
   const { data: users, isLoading } = useGetUsers({ search, role: filterRole as any || undefined });
   const totalPages = Math.max(1, Math.ceil((users?.length || 0) / PAGE_SIZE));
   const pagedUsers = users?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -97,6 +103,31 @@ export default function AdminUsers() {
       onSuccess: () => { toast({ title: "User dihapus" }); qc.invalidateQueries({ queryKey: ["/api/users"] }); },
       onError: (e: any) => toast({ variant: "destructive", title: "Gagal", description: e?.data?.message }),
     });
+  };
+
+  const openBlokir = (u: any) => { setBlokirUser(u); setBlokirCatatan(u.catatanBlokir || ""); setShowBlokirDialog(true); };
+
+  const handleBlokir = async (isBlocked: boolean, targetUser?: any) => {
+    const user = targetUser || blokirUser;
+    if (!user) return;
+    setBlokirLoading(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}/blokir`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isBlocked, catatanBlokir: isBlocked ? blokirCatatan : null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast({ title: isBlocked ? `${user.nama} diblokir` : `Blokir ${user.nama} dicabut` });
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      setShowBlokirDialog(false);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Gagal", description: e.message });
+    } finally {
+      setBlokirLoading(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,13 +261,22 @@ export default function AdminUsers() {
                   <TableCell className="text-sm font-mono text-slate-600">{u.nim || u.nip || "-"}</TableCell>
                   <TableCell className="text-sm text-slate-600">{(u as any).angkatan || "-"}</TableCell>
                   <TableCell className="text-sm">{(u as any).jurusan?.nama || "-"}</TableCell>
-                  <TableCell><StatusBadge status={u.status} /></TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <StatusBadge status={u.status} />
+                      {(u as any).isBlocked && (
+                        <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200 w-fit">
+                          <ShieldBan className="w-3 h-3 mr-1" />Diblokir
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary rounded-lg h-8 w-8"><MoreHorizontal className="w-4 h-4" /></Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl w-48">
+                      <DropdownMenuContent align="end" className="rounded-xl w-52">
                         <DropdownMenuItem onClick={() => openEdit(u)} className="gap-2"><Pencil className="w-4 h-4" />Edit Data</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openChangePass(u)} className="gap-2 text-blue-600"><KeyRound className="w-4 h-4" />Ganti Password</DropdownMenuItem>
                         {u.status === "menunggu" && <>
@@ -245,6 +285,11 @@ export default function AdminUsers() {
                         </>}
                         {u.status === "aktif" && <DropdownMenuItem onClick={() => handleVerify(u.id, "ditolak")} className="gap-2 text-orange-600"><UserCog className="w-4 h-4" />Nonaktifkan</DropdownMenuItem>}
                         {u.status !== "aktif" && u.status !== "menunggu" && <DropdownMenuItem onClick={() => handleVerify(u.id, "aktif")} className="gap-2 text-green-600"><CheckCircle2 className="w-4 h-4" />Aktifkan</DropdownMenuItem>}
+                        {!(u as any).isBlocked ? (
+                          <DropdownMenuItem onClick={() => openBlokir(u)} className="gap-2 text-red-700"><ShieldBan className="w-4 h-4" />Blokir Akun</DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleBlokir(false, u)} className="gap-2 text-green-700"><ShieldCheck className="w-4 h-4" />Cabut Blokir</DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => handleDelete(u.id, u.nama)} className="gap-2 text-destructive"><Trash2 className="w-4 h-4" />Hapus</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -497,6 +542,45 @@ export default function AdminUsers() {
             <Button onClick={handleImport} disabled={importing || !importCsv} className="rounded-xl gap-2">
               {importing ? <Loader2 className="animate-spin w-4 h-4" /> : <Upload className="w-4 h-4" />}
               Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog Blokir Akun ── */}
+      <Dialog open={showBlokirDialog} onOpenChange={setShowBlokirDialog}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <ShieldBan className="w-5 h-5" />Blokir Akun Pengguna
+            </DialogTitle>
+            <DialogDescription>
+              Pengguna yang diblokir tidak dapat login ke sistem meskipun akun mereka aktif.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {blokirUser && (
+              <div className="bg-slate-50 rounded-xl p-3 text-sm">
+                <p className="font-semibold text-slate-800">{blokirUser.nama}</p>
+                <p className="text-muted-foreground">{blokirUser.email}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Alasan blokir (opsional)</Label>
+              <Textarea
+                placeholder="Contoh: Melanggar aturan penggunaan laboratorium..."
+                value={blokirCatatan}
+                onChange={(e) => setBlokirCatatan(e.target.value)}
+                className="rounded-xl resize-none"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBlokirDialog(false)} className="rounded-xl">Batal</Button>
+            <Button onClick={() => handleBlokir(true)} disabled={blokirLoading} className="rounded-xl gap-2 bg-red-600 hover:bg-red-700 text-white">
+              {blokirLoading ? <Loader2 className="animate-spin w-4 h-4" /> : <ShieldBan className="w-4 h-4" />}
+              Blokir Akun
             </Button>
           </DialogFooter>
         </DialogContent>

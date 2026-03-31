@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { jurusanTable } from "./jurusan";
@@ -23,6 +23,8 @@ export const usersTable = pgTable("users", {
   jurusanId: integer("jurusan_id").references(() => jurusanTable.id),
   laboratoriumId: integer("laboratorium_id").references(() => laboratoriumTable.id),
   status: userStatusEnum("status").notNull().default("menunggu"),
+  isBlocked: boolean("is_blocked").notNull().default(false),
+  catatanBlokir: text("catatan_blokir"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
