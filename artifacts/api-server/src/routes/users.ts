@@ -55,6 +55,7 @@ router.post("/", requireAuth, requireRole("admin"), async (req: AuthRequest, res
       jurusanId: jurusanId || null,
       laboratoriumId: laboratoriumId || null,
       status: "aktif",
+      mustSetupProfile: true,
     }).returning();
 
     const { password: _, ...rest } = user;

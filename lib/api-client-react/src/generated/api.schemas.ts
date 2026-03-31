@@ -57,10 +57,16 @@ export interface User {
   nim?: string | null;
   nip?: string | null;
   noHp?: string | null;
+  noWa?: string | null;
+  callmebotKey?: string | null;
+  tandaTangan?: string | null;
   jurusanId?: number | null;
   jurusan?: Jurusan | null;
   laboratoriumId?: number | null;
   status: UserStatus;
+  isBlocked?: boolean;
+  catatanBlokir?: string | null;
+  mustSetupProfile?: boolean;
   createdAt: string;
 }
 

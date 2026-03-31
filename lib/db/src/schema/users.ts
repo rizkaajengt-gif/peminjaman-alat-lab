@@ -25,6 +25,7 @@ export const usersTable = pgTable("users", {
   status: userStatusEnum("status").notNull().default("menunggu"),
   isBlocked: boolean("is_blocked").notNull().default(false),
   catatanBlokir: text("catatan_blokir"),
+  mustSetupProfile: boolean("must_setup_profile").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

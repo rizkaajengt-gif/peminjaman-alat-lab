@@ -1,20 +1,24 @@
 import React, { createContext, useContext, ReactNode } from "react";
 import { useGetMe, User } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const qc = useQueryClient();
   const { data: user, isLoading, error } = useGetMe({
     query: {
       retry: false,
@@ -22,10 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const refreshUser = async () => {
+    await qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    await qc.refetchQueries({ queryKey: ["/api/auth/me"] });
+  };
+
   const value = {
     user: user ?? null,
     isLoading,
     isAuthenticated: !!user && !error,
+    refreshUser,
   };
 
   if (isLoading) {

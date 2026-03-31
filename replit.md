@@ -142,3 +142,13 @@ lib/
 3. **Indikator Keterlambatan Pengembalian di Dashboard** — New `peminjamaTerlambat` field in `/api/laporan/statistik` response counts active borrowings (alat + phantom) past their return date:
    - Admin Dashboard: shows red alert card with count and link to pengembalian
    - PLP Dashboard: added "Terlambat Dikembalikan" stat card + red alert card
+
+4. **First-Login Forced Profile Setup Flow** — When accounts are created by admin or imported via CSV, `must_setup_profile = true` is set. On first login, users are redirected to `/setup-profil` (a 3-step wizard):
+   - Step 1: Complete profile (nama, noHp, noWa)
+   - Step 2: Change password from default to a new secure password
+   - Step 3: Draw digital signature (tanda tangan) using SignaturePad
+   - `PUT /api/auth/me/setup` endpoint: validates all fields, updates DB, sets `mustSetupProfile = false`
+   - `ProtectedRoute` in App.tsx intercepts and redirects to `/setup-profil` if flag is true
+   - `SetupProfilRoute` redirects to dashboard if flag is already false
+   - User type in api-client updated to include: `mustSetupProfile`, `isBlocked`, `catatanBlokir`, `noWa`, `callmebotKey`, `tandaTangan`
+   - DB column: `must_setup_profile boolean NOT NULL DEFAULT false` on `users` table

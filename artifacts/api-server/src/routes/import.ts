@@ -91,6 +91,7 @@ router.post("/users", requireAuth, requireRole("admin"), async (req: AuthRequest
           angkatan: angkatan || null,
           jurusanId: jurusanId ? parseInt(jurusanId) : null,
           status: "aktif",
+          mustSetupProfile: true,
         });
         berhasil++;
       } catch (e: any) {

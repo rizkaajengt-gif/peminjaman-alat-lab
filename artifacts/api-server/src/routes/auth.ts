@@ -156,4 +156,35 @@ router.post("/register", async (req, res) => {
   }
 });
 
+router.put("/me/setup", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { nama, noHp, noWa, passwordBaru, tandaTangan } = req.body;
+    if (!nama || !passwordBaru || !tandaTangan) {
+      res.status(400).json({ message: "Nama, password baru, dan tanda tangan wajib diisi" });
+      return;
+    }
+    if (passwordBaru.length < 6) {
+      res.status(400).json({ message: "Password baru minimal 6 karakter" });
+      return;
+    }
+    await db.update(usersTable).set({
+      nama: nama.trim(),
+      noHp: noHp?.trim() || null,
+      noWa: noWa?.trim() || null,
+      password: hashPassword(passwordBaru),
+      tandaTangan,
+      mustSetupProfile: false,
+      updatedAt: new Date(),
+    }).where(eq(usersTable.id, req.user!.id));
+    const user = await db.query.usersTable.findFirst({
+      where: eq(usersTable.id, req.user!.id),
+      with: { jurusan: true },
+    });
+    const { password: _, ...rest } = user!;
+    res.json({ user: rest, message: "Profil berhasil disiapkan" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;

@@ -37,6 +37,7 @@ import PrintPeminjaman from "./pages/shared/PrintPeminjaman";
 import PrintPeminjamanPhantom from "./pages/shared/PrintPeminjamanPhantom";
 import PrintPeminjamanRuangan from "./pages/shared/PrintPeminjamanRuangan";
 import Profil from "./pages/profil/Profil";
+import SetupProfil from "./pages/auth/SetupProfil";
 
 import NotFound from "./pages/not-found";
 
@@ -48,8 +49,17 @@ function ProtectedRoute({ component: Component, roles }: { component: React.Comp
   const { isAuthenticated, user, isLoading } = useAuth();
   if (isLoading) return null;
   if (!isAuthenticated) return <Redirect to="/login" />;
+  if (user?.mustSetupProfile) return <Redirect to="/setup-profil" />;
   if (roles && user && !roles.includes(user.role)) return <Redirect to="/dashboard" />;
   return <MainLayout><Component /></MainLayout>;
+}
+
+function SetupProfilRoute() {
+  const { isAuthenticated, user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Redirect to="/login" />;
+  if (!user?.mustSetupProfile) return <Redirect to="/dashboard" />;
+  return <SetupProfil />;
 }
 
 function Router() {
@@ -58,6 +68,7 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/setup-profil">{() => <SetupProfilRoute />}</Route>
 
       {/* Print views - no sidebar */}
       <Route path="/print/permintaan-bahan/:id" component={PrintPermintaan} />
