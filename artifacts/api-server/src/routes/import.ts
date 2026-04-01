@@ -47,18 +47,36 @@ function parseCsv(csv: string): { headers: string[]; rows: Record<string, string
 
 // ─── IMPORT PENGGUNA ──────────────────────────────────────────────────────────
 router.get("/users/template", requireAuth, requireRole("admin"), async (_req, res) => {
-  const jurusanList = await db.query.jurusanTable.findMany({ columns: { id: true, nama: true } });
+  const jurusanList = await db.query.jurusanTable.findMany({ columns: { id: true, nama: true }, orderBy: (j, { asc }) => asc(j.id) });
+  const firstJurusan = jurusanList[0];
+  const secondJurusan = jurusanList[1] ?? firstJurusan;
+  const jId = firstJurusan?.id ?? "";
+  const jId2 = secondJurusan?.id ?? "";
+
   let info = "# TEMPLATE IMPORT PENGGUNA SIPELAB\n";
   info += "# Kolom wajib: nama, email, role\n";
   info += "# password: jika dikosongkan, akan menggunakan NIM (mahasiswa) atau NIP (staf)\n";
   info += "# role: admin | mahasiswa | plp | gudang | dosen\n";
   info += "# angkatan: tahun masuk (misal: 2021) – digunakan untuk nonaktifkan massal saat lulus\n";
-  info += "# Jurusan (isi ID):\n";
-  info += jurusanList.map(j => `# ${j.id} = ${j.nama}`).join("\n");
-  info += "\nnama,email,password,role,nim,nip,noHp,angkatan,jurusanId\n";
-  info += "Budi Santoso,budi2021@poltekkes.ac.id,,mahasiswa,2021001001,,,2021,1\n";
-  info += "Siti Rahayu,siti2021@poltekkes.ac.id,,mahasiswa,2021001002,,,2021,1\n";
-  info += "Dr. Hendra Wijaya,hendra@poltekkes.ac.id,Password123!,dosen,,197001012000012001,,,1\n";
+  info += "#\n";
+  info += "# Daftar Jurusan (gunakan angka ID di kolom jurusanId):\n";
+  if (jurusanList.length === 0) {
+    info += "# (Belum ada jurusan – tambahkan jurusan terlebih dahulu di menu Jurusan)\n";
+  } else {
+    info += jurusanList.map(j => `# ID ${j.id} = ${j.nama}`).join("\n") + "\n";
+  }
+  info += "#\n";
+  info += "nama,email,password,role,nim,nip,noHp,angkatan,jurusanId\n";
+  if (firstJurusan) {
+    const tahun = new Date().getFullYear() - 1;
+    info += `Budi Santoso,budi${tahun}@poltekkes.ac.id,,mahasiswa,${tahun}001001,,,${tahun},${jId}\n`;
+    info += `Siti Rahayu,siti${tahun}@poltekkes.ac.id,,mahasiswa,${tahun}001002,,,${tahun},${jId}\n`;
+    info += `Dr. Hendra Wijaya,hendra@poltekkes.ac.id,Password123!,dosen,,197001012000012001,,,${jId2}\n`;
+  } else {
+    info += "Budi Santoso,budi@poltekkes.ac.id,,mahasiswa,2021001001,,,2021,\n";
+    info += "Siti Rahayu,siti@poltekkes.ac.id,,mahasiswa,2021001002,,,2021,\n";
+    info += "Dr. Hendra Wijaya,hendra@poltekkes.ac.id,Password123!,dosen,,197001012000012001,,,\n";
+  }
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=template_import_pengguna.csv");
   res.send("\uFEFF" + info);
@@ -106,16 +124,27 @@ router.post("/users", requireAuth, requireRole("admin"), async (req: AuthRequest
 
 // ─── IMPORT ALAT ─────────────────────────────────────────────────────────────
 router.get("/alat/template", requireAuth, requireRole("admin", "plp"), async (_req, res) => {
-  const labs = await db.query.laboratoriumTable.findMany({ columns: { id: true, nama: true } });
+  const labs = await db.query.laboratoriumTable.findMany({ columns: { id: true, nama: true }, orderBy: (l, { asc }) => asc(l.id) });
   const plps = await db.query.usersTable.findMany({ where: (u, { eq }) => eq(u.role, "plp"), columns: { id: true, nama: true } });
+  const firstLab = labs[0];
+  const labId = firstLab?.id ?? "";
   let info = "# TEMPLATE IMPORT ALAT LABORATORIUM\n";
   info += "# Kolom wajib: kode, nama, kondisi, stok, satuan, laboratoriumId\n";
   info += "# kondisi: baik | rusak_ringan | rusak_berat\n";
-  info += "# Daftar Laboratorium:\n" + labs.map(l => `# ${l.id} = ${l.nama}`).join("\n");
-  info += "\n# Daftar PLP (Penanggung Jawab):\n" + plps.map(p => `# ${p.id} = ${p.nama}`).join("\n");
-  info += "\nkode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId,penanggungjawabId\n";
-  info += "AL-001,Mikroskop Binokuler,Perbesaran 1000x,baik,5,unit,1,\n";
-  info += "AL-002,Spektrofotometer,,baik,2,unit,1,\n";
+  info += "#\n";
+  info += "# Daftar Laboratorium (gunakan angka ID di kolom laboratoriumId):\n";
+  if (labs.length === 0) {
+    info += "# (Belum ada laboratorium – tambahkan laboratorium terlebih dahulu)\n";
+  } else {
+    info += labs.map(l => `# ID ${l.id} = ${l.nama}`).join("\n") + "\n";
+  }
+  if (plps.length > 0) {
+    info += "#\n# Daftar PLP (Penanggung Jawab, opsional):\n";
+    info += plps.map(p => `# ID ${p.id} = ${p.nama}`).join("\n") + "\n";
+  }
+  info += "#\nkode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId,penanggungjawabId\n";
+  info += `AL-001,Mikroskop Binokuler,Perbesaran 1000x,baik,5,unit,${labId},\n`;
+  info += `AL-002,Spektrofotometer,,baik,2,unit,${labId},\n`;
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=template_import_alat.csv");
   res.send("\uFEFF" + info);
@@ -157,15 +186,26 @@ router.post("/alat", requireAuth, requireRole("admin", "plp"), async (req: AuthR
 
 // ─── IMPORT BAHAN HABIS PAKAI ─────────────────────────────────────────────────
 router.get("/bahan/template", requireAuth, requireRole("admin", "plp", "gudang"), async (_req, res) => {
-  const labs = await db.query.laboratoriumTable.findMany({ columns: { id: true, nama: true } });
+  const labs = await db.query.laboratoriumTable.findMany({ columns: { id: true, nama: true }, orderBy: (l, { asc }) => asc(l.id) });
   const plps = await db.query.usersTable.findMany({ where: (u, { eq }) => eq(u.role, "plp"), columns: { id: true, nama: true } });
+  const firstLab = labs[0];
+  const labId = firstLab?.id ?? "";
   let info = "# TEMPLATE IMPORT BAHAN HABIS PAKAI\n";
   info += "# Kolom wajib: kode, nama, stok, satuan, laboratoriumId\n";
-  info += "# Daftar Laboratorium:\n" + labs.map(l => `# ${l.id} = ${l.nama}`).join("\n");
-  info += "\n# Daftar PLP (Penanggung Jawab):\n" + plps.map(p => `# ${p.id} = ${p.nama}`).join("\n");
-  info += "\nkode,nama,deskripsi,stok,stokMinimal,satuan,laboratoriumId,penanggungjawabId\n";
-  info += "BH-001,Alkohol 70%,Bahan desinfektan,500,100,mL,1,\n";
-  info += "BH-002,HCl 1M,,100,20,mL,1,\n";
+  info += "#\n";
+  info += "# Daftar Laboratorium (gunakan angka ID di kolom laboratoriumId):\n";
+  if (labs.length === 0) {
+    info += "# (Belum ada laboratorium – tambahkan laboratorium terlebih dahulu)\n";
+  } else {
+    info += labs.map(l => `# ID ${l.id} = ${l.nama}`).join("\n") + "\n";
+  }
+  if (plps.length > 0) {
+    info += "#\n# Daftar PLP (Penanggung Jawab, opsional):\n";
+    info += plps.map(p => `# ID ${p.id} = ${p.nama}`).join("\n") + "\n";
+  }
+  info += "#\nkode,nama,deskripsi,stok,stokMinimal,satuan,laboratoriumId,penanggungjawabId\n";
+  info += `BH-001,Alkohol 70%,Bahan desinfektan,500,100,mL,${labId},\n`;
+  info += `BH-002,HCl 1M,,100,20,mL,${labId},\n`;
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=template_import_bahan.csv");
   res.send("\uFEFF" + info);
@@ -207,14 +247,22 @@ router.post("/bahan", requireAuth, requireRole("admin", "plp", "gudang"), async 
 
 // ─── IMPORT PHANTOM ───────────────────────────────────────────────────────────
 router.get("/phantom/template", requireAuth, requireRole("admin", "plp"), async (_req, res) => {
-  const labs = await db.query.laboratoriumTable.findMany({ columns: { id: true, nama: true } });
+  const labs = await db.query.laboratoriumTable.findMany({ columns: { id: true, nama: true }, orderBy: (l, { asc }) => asc(l.id) });
+  const firstLab = labs[0];
+  const labId = firstLab?.id ?? "";
   let info = "# TEMPLATE IMPORT PHANTOM LABORATORIUM\n";
   info += "# Kolom wajib: kode, nama, kondisi, stok, satuan, laboratoriumId\n";
   info += "# kondisi: baik | rusak ringan | rusak berat\n";
-  info += "# Daftar Laboratorium:\n" + labs.map(l => `# ${l.id} = ${l.nama}`).join("\n");
-  info += "\nkode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId\n";
-  info += "PH-001,Phantom Bayi Lahir,,baik,3,unit,1\n";
-  info += "PH-002,Phantom Kepala CPR,,baik,2,set,1\n";
+  info += "#\n";
+  info += "# Daftar Laboratorium (gunakan angka ID di kolom laboratoriumId):\n";
+  if (labs.length === 0) {
+    info += "# (Belum ada laboratorium – tambahkan laboratorium terlebih dahulu)\n";
+  } else {
+    info += labs.map(l => `# ID ${l.id} = ${l.nama}`).join("\n") + "\n";
+  }
+  info += "#\nkode,nama,deskripsi,kondisi,stok,satuan,laboratoriumId\n";
+  info += `PH-001,Phantom Bayi Lahir,,baik,3,unit,${labId}\n`;
+  info += `PH-002,Phantom Kepala CPR,,baik,2,set,${labId}\n`;
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=template_import_phantom.csv");
   res.send("\uFEFF" + info);
