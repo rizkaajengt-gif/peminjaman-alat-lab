@@ -29,7 +29,8 @@ export default function PermintaanBahan() {
   const { toast } = useToast();
   const createMutation = useCreatePermintaanBahan();
   const isPLPOrAdmin = user?.role === "plp" || user?.role === "admin" || user?.role === "gudang";
-  const { data: labs } = useGetLaboratorium({});
+  const grupJurusan = (user?.jurusan as any)?.grupJurusan as string | undefined;
+  const { data: labs } = useGetLaboratorium(grupJurusan && !isPLPOrAdmin ? { grupJurusan } : {});
   const { data: bahanList } = useGetBahan({});
   const [items, setItems] = useState<{ bahanId: number; jumlahDiminta: number }[]>([]);
   const [success, setSuccess] = useState(false);

@@ -6,6 +6,7 @@ export const jurusanTable = pgTable("jurusan", {
   id: serial("id").primaryKey(),
   nama: text("nama").notNull(),
   kode: text("kode").notNull().unique(),
+  grupJurusan: text("grup_jurusan"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

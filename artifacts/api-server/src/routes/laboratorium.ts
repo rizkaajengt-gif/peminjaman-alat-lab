@@ -1,15 +1,29 @@
 import { Router } from "express";
-import { db, laboratoriumTable } from "@workspace/db";
-import { eq, and, SQL } from "drizzle-orm";
+import { db, laboratoriumTable, jurusanTable } from "@workspace/db";
+import { eq, and, inArray, SQL } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
 
 router.get("/", async (req, res) => {
   try {
-    const { jurusanId } = req.query;
+    const { jurusanId, grupJurusan } = req.query;
     const conditions: SQL[] = [];
-    if (jurusanId) conditions.push(eq(laboratoriumTable.jurusanId, Number(jurusanId)));
+    if (jurusanId) {
+      conditions.push(eq(laboratoriumTable.jurusanId, Number(jurusanId)));
+    } else if (grupJurusan) {
+      const jurusanDalamGrup = await db.query.jurusanTable.findMany({
+        where: eq(jurusanTable.grupJurusan, String(grupJurusan)),
+        columns: { id: true },
+      });
+      const ids = jurusanDalamGrup.map(j => j.id);
+      if (ids.length > 0) {
+        conditions.push(inArray(laboratoriumTable.jurusanId, ids));
+      } else {
+        res.json([]);
+        return;
+      }
+    }
     const data = await db.query.laboratoriumTable.findMany({
       where: conditions.length > 0 ? and(...conditions) : undefined,
       with: { jurusan: true },

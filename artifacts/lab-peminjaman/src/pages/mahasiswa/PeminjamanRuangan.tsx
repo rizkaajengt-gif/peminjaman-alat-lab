@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState } from "react";
 import { useCreatePeminjamanRuangan, useGetLaboratorium } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
 import { Card } from "@/components/ui/card";
@@ -75,8 +76,10 @@ const KATEGORI = [
 
 export default function PeminjamanRuangan() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const createMutation = useCreatePeminjamanRuangan();
-  const { data: labs } = useGetLaboratorium({});
+  const grupJurusan = (user?.jurusan as any)?.grupJurusan as string | undefined;
+  const { data: labs } = useGetLaboratorium(grupJurusan ? { grupJurusan } : {});
   const [success, setSuccess] = useState(false);
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),

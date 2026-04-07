@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreatePeminjamanAlat, useGetLaboratorium, useGetAlat } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
 import { Loader2, Trash2, Clock, BookOpen, FlaskConical, Heart, Building2 } from "lucide-react";
@@ -31,8 +32,10 @@ const formSchema = z.object({
 
 export default function FormPeminjaman() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const createMutation = useCreatePeminjamanAlat();
-  const { data: labs } = useGetLaboratorium({});
+  const grupJurusan = (user?.jurusan as any)?.grupJurusan as string | undefined;
+  const { data: labs } = useGetLaboratorium(grupJurusan ? { grupJurusan } : {});
   
   const [selectedLab, setSelectedLab] = useState<number | null>(null);
   const { data: alatList } = useGetAlat({ laboratoriumId: selectedLab || undefined }, { query: { enabled: !!selectedLab } });

@@ -37,6 +37,7 @@ export interface Jurusan {
   id: number;
   nama: string;
   kode: string;
+  grupJurusan?: string | null;
   createdAt: string;
 }
 
@@ -506,6 +507,7 @@ export const GetUsersRole = {
 
 export type GetLaboratoriumParams = {
   jurusanId?: number;
+  grupJurusan?: string;
 };
 
 export type GetAlatParams = {

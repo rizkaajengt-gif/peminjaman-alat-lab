@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGetLaboratorium, customFetch } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { SearchableSelect } from "@/components/ui-custom/SearchableSelect";
 import { Loader2, Trash2, Clock, BookOpen, FlaskConical, Heart, Building2 } from "lucide-react";
@@ -32,8 +33,10 @@ const formSchema = z.object({
 
 export default function PeminjamanPhantom() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const qc = useQueryClient();
-  const { data: labs } = useGetLaboratorium({});
+  const grupJurusan = (user?.jurusan as any)?.grupJurusan as string | undefined;
+  const { data: labs } = useGetLaboratorium(grupJurusan ? { grupJurusan } : {});
   const [selectedLab, setSelectedLab] = useState<number | null>(null);
   const [items, setItems] = useState<{ phantomId: number; jumlah: number }[]>([]);
 

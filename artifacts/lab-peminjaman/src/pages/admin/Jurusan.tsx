@@ -21,17 +21,17 @@ export default function AdminJurusan() {
   const createMutation = useCreateJurusan();
   const updateMutation = useUpdateJurusan();
   const deleteMutation = useDeleteJurusan();
-  const emptyForm = { nama: "", kode: "", deskripsi: "" };
+  const emptyForm = { nama: "", kode: "", grupJurusan: "", deskripsi: "" };
   const [form, setForm] = useState(emptyForm);
 
   const open = (item?: any) => {
     setEditItem(item || null);
-    setForm(item ? { nama: item.nama, kode: item.kode, deskripsi: item.deskripsi || "" } : emptyForm);
+    setForm(item ? { nama: item.nama, kode: item.kode, grupJurusan: item.grupJurusan || "", deskripsi: item.deskripsi || "" } : emptyForm);
     setShowDialog(true);
   };
 
   const handleSave = () => {
-    const payload = { nama: form.nama, kode: form.kode, deskripsi: form.deskripsi || null };
+    const payload = { nama: form.nama, kode: form.kode, grupJurusan: form.grupJurusan?.trim() || null, deskripsi: form.deskripsi || null };
     const p = editItem
       ? updateMutation.mutateAsync({ id: editItem.id, data: payload })
       : createMutation.mutateAsync({ data: payload });
@@ -92,7 +92,7 @@ export default function AdminJurusan() {
             <TableHeader className="bg-slate-50"><TableRow className="hover:bg-transparent border-slate-100">
               <TableHead className="font-semibold">Kode</TableHead>
               <TableHead className="font-semibold">Nama Jurusan / Prodi</TableHead>
-              <TableHead className="font-semibold">Deskripsi</TableHead>
+              <TableHead className="font-semibold">Grup Jurusan</TableHead>
               <TableHead className="text-right font-semibold">Aksi</TableHead>
             </TableRow></TableHeader>
             <TableBody>
@@ -102,7 +102,13 @@ export default function AdminJurusan() {
                 <TableRow key={j.id} className="hover:bg-slate-50/50 border-slate-50">
                   <TableCell className="font-mono font-bold text-primary text-sm">{j.kode}</TableCell>
                   <TableCell className="font-semibold">{j.nama}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{j.deskripsi || "-"}</TableCell>
+                  <TableCell>
+                    {(j as any).grupJurusan ? (
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        {(j as any).grupJurusan}
+                      </span>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                  </TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary" onClick={() => open(j)}><Pencil className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive" onClick={() => handleDelete(j.id, j.nama)}><Trash2 className="w-4 h-4" /></Button>
@@ -127,6 +133,22 @@ export default function AdminJurusan() {
                 <Label>Nama Jurusan</Label>
                 <Input value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} className="rounded-xl h-10" />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                Grup Jurusan
+                <span className="text-xs font-normal text-muted-foreground">(opsional, untuk pengelompokan multi-prodi)</span>
+              </Label>
+              <Input
+                value={form.grupJurusan}
+                onChange={e => setForm({...form, grupJurusan: e.target.value})}
+                className="rounded-xl h-10"
+                placeholder="Contoh: kebidanan, keperawatan, farmasi..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Tulis nama grup yang sama untuk prodi-prodi yang berbagi laboratorium dan PLP yang sama.
+                Misal: D3, D4, dan Profesi Kebidanan semua diisi <strong>kebidanan</strong>.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>Deskripsi (Opsional)</Label>
