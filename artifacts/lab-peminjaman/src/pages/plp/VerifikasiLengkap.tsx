@@ -640,7 +640,12 @@ function VerifikasiBahanTab() {
       ? selected.items?.map((item: any) => ({ itemId: item.id, jumlah: editedItems[item.id] ?? item.jumlahDiminta }))
       : undefined;
     updateStatus.mutate({ id: selected.id, data: { status, catatan: catatan || undefined, jumlahDisetujui } as any }, {
-      onSuccess: () => { toast({ title: status === "disetujui" ? "Permintaan disetujui" : "Permintaan ditolak" }); setSelected(null); setCatatan(""); setEditMode(false); setEditedItems({}); qc.invalidateQueries({ queryKey: ["/api/permintaan-bahan"] }); },
+      onSuccess: () => {
+        toast({ title: status === "disetujui" ? "Disetujui, stok bahan PLP berkurang" : "Permintaan ditolak" });
+        setSelected(null); setCatatan(""); setEditMode(false); setEditedItems({});
+        qc.invalidateQueries({ queryKey: ["/api/permintaan-bahan"] });
+        qc.invalidateQueries({ queryKey: ["/api/bahan"] });
+      },
       onError: (e: any) => toast({ variant: "destructive", description: e?.data?.message }),
     });
   };
@@ -721,7 +726,7 @@ function VerifikasiBahanTab() {
             <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">Batal</Button>
             <Button variant="destructive" onClick={() => handleAction("ditolak")} disabled={updateStatus.isPending} className="rounded-xl gap-2"><XCircle className="w-4 h-4" />Tolak</Button>
             <Button onClick={() => handleAction("disetujui")} disabled={updateStatus.isPending} className="rounded-xl gap-2 bg-green-600 hover:bg-green-700">
-              {updateStatus.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Setujui</>}
+              {updateStatus.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <><CheckCircle2 className="w-4 h-4" />Setujui & Ambil</>}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, permintaanBahanTable, permintaanBahanItemTable, bahanTable, plpLaboratoriumTable, usersTable } from "@workspace/db";
-import { eq, and, or, SQL } from "drizzle-orm";
+import { eq, and, or, SQL, gte, sql } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../lib/auth.js";
 import { kirimNotifWa, formatPesanPermintaanBahan } from "../lib/notifikasi.js";
 
@@ -148,32 +148,73 @@ router.put("/:id/status", requireAuth, async (req: AuthRequest, res) => {
       res.status(403).json({ message: "Permintaan ini ditujukan ke PLP, bukan gudang" }); return;
     }
 
-    if (status === "disetujui" && jumlahDisetujui) {
+    const isFromGudang = existing.tujuan === "gudang";
+    // Permintaan ke PLP dianggap diambil ketika PLP menyetujuinya.
+    // Permintaan ke gudang tetap mengurangi stok saat status menjadi disiapkan.
+    const shouldDeductStock =
+      (existing.status === "menunggu" && status === "disetujui" && !isFromGudang) ||
+      (existing.status !== "disiapkan" && status === "disiapkan" && isFromGudang);
+    if (jumlahDisetujui !== undefined && !Array.isArray(jumlahDisetujui)) {
+      res.status(400).json({ message: "Format jumlah yang disetujui tidak valid" }); return;
+    }
+    const approvedQtyByItemId = new Map<number, number>();
+    if (status === "disetujui" && Array.isArray(jumlahDisetujui)) {
       for (const jd of jumlahDisetujui) {
-        await db.update(permintaanBahanItemTable)
-          .set({ jumlahDisetujui: jd.jumlah })
-          .where(eq(permintaanBahanItemTable.id, jd.itemId));
+        if (!Number.isInteger(jd.jumlah) || jd.jumlah <= 0) {
+          res.status(400).json({ message: "Jumlah bahan harus berupa bilangan bulat lebih dari 0" }); return;
+        }
+        approvedQtyByItemId.set(Number(jd.itemId), jd.jumlah);
       }
     }
 
-    if (status === "disiapkan") {
-      const isFromGudang = existing.tujuan === "gudang";
-      for (const item of existing.items) {
-        const bahan = await db.query.bahanTable.findFirst({ where: eq(bahanTable.id, item.bahanId) });
-        if (bahan) {
-          const qty = item.jumlahDisetujui || item.jumlahDiminta;
-          if (isFromGudang) {
-            await db.update(bahanTable).set({ stokGudang: Math.max(0, bahan.stokGudang - qty), updatedAt: new Date() }).where(eq(bahanTable.id, item.bahanId));
-          } else {
-            await db.update(bahanTable).set({ stok: Math.max(0, bahan.stok - qty), updatedAt: new Date() }).where(eq(bahanTable.id, item.bahanId));
+    const updated = await db.transaction(async (tx) => {
+      if (status === "disetujui" && jumlahDisetujui) {
+        for (const jd of jumlahDisetujui) {
+          await tx.update(permintaanBahanItemTable)
+            .set({ jumlahDisetujui: jd.jumlah })
+            .where(and(
+              eq(permintaanBahanItemTable.id, jd.itemId),
+              eq(permintaanBahanItemTable.permintaanId, existing.id),
+            ));
+        }
+      }
+
+      if (shouldDeductStock) {
+        for (const item of existing.items) {
+          const qty = approvedQtyByItemId.get(item.id) ?? item.jumlahDisetujui ?? item.jumlahDiminta;
+          if (!Number.isInteger(qty) || qty <= 0) {
+            throw new Error("JUMLAH_TIDAK_VALID");
+          }
+
+          // Atomic decrement prevents stok menjadi negatif and handles concurrent approvals.
+          const stockColumn = isFromGudang ? bahanTable.stokGudang : bahanTable.stok;
+          const stockUpdate = isFromGudang
+            ? { stokGudang: sql`${bahanTable.stokGudang} - ${qty}` }
+            : { stok: sql`${bahanTable.stok} - ${qty}` };
+          const [deducted] = await tx.update(bahanTable)
+            .set({ ...stockUpdate, updatedAt: new Date() })
+            .where(and(eq(bahanTable.id, item.bahanId), gte(stockColumn, qty)))
+            .returning({ id: bahanTable.id });
+
+          if (!deducted) {
+            const bahan = await tx.query.bahanTable.findFirst({ where: eq(bahanTable.id, item.bahanId) });
+            throw new Error(`STOK_TIDAK_CUKUP:${bahan?.nama || "Bahan"}:${bahan?.satuan || "unit"}`);
           }
         }
       }
-    }
 
-    const [updated] = await db.update(permintaanBahanTable)
-      .set({ status: status as any, catatan: catatan || null, verifikasiOleh: req.user!.id, updatedAt: new Date() })
-      .where(eq(permintaanBahanTable.id, Number(req.params.id))).returning();
+      const [saved] = await tx.update(permintaanBahanTable)
+        .set({ status: status as any, catatan: catatan || null, verifikasiOleh: req.user!.id, updatedAt: new Date() })
+        // The status guard makes stock deduction idempotent under repeated/concurrent requests.
+        .where(and(
+          eq(permintaanBahanTable.id, existing.id),
+          eq(permintaanBahanTable.status, existing.status),
+        ))
+        .returning();
+
+      if (!saved) throw new Error("PERMINTAAN_SUDAH_DIPROSES");
+      return saved;
+    });
 
     const result = await db.query.permintaanBahanTable.findFirst({
       where: eq(permintaanBahanTable.id, updated.id),
@@ -181,6 +222,17 @@ router.put("/:id/status", requireAuth, async (req: AuthRequest, res) => {
     });
     res.json(result);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "JUMLAH_TIDAK_VALID") {
+      res.status(400).json({ message: "Jumlah bahan harus berupa bilangan bulat lebih dari 0" }); return;
+    }
+    if (message === "PERMINTAAN_SUDAH_DIPROSES") {
+      res.status(409).json({ message: "Permintaan sudah diproses oleh pengguna lain" }); return;
+    }
+    if (message.startsWith("STOK_TIDAK_CUKUP:")) {
+      const [, nama, satuan] = message.split(":");
+      res.status(400).json({ message: `Stok ${nama} tidak mencukupi (${satuan})` }); return;
+    }
     res.status(500).json({ message: "Server error" });
   }
 });
