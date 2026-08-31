@@ -1,7 +1,8 @@
 import React, { createContext, useContext, ReactNode } from "react";
-import { useGetMe, User } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useGetMe, User } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface AuthContextType {
   user: User | null;
@@ -19,8 +20,12 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
+  const [location] = useLocation();
+  const isPublicRoute = location === "/" || location === "/ketersediaan";
   const { data: user, isLoading, error } = useGetMe({
     query: {
+      enabled: !isPublicRoute,
+      queryKey: getGetMeQueryKey(),
       retry: false,
       refetchOnWindowFocus: false,
     },

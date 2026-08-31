@@ -15,6 +15,47 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
+ * Returns laboratory information, equipment availability, and approved upcoming room schedules without authentication.
+ * @summary Get public laboratory availability
+ */
+export const GetPublicKetersediaanResponse = zod.object({
+  generatedAt: zod.date(),
+  laboratorium: zod.array(
+    zod.object({
+      id: zod.number(),
+      nama: zod.string(),
+      kode: zod.string(),
+      lokasi: zod.string(),
+      kapasitas: zod.number(),
+      jurusanNama: zod.string().nullish(),
+      alat: zod.array(
+        zod.object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          kondisi: zod.string(),
+          stok: zod.number(),
+          stokTersedia: zod.number(),
+          satuan: zod.string(),
+        }),
+      ),
+      jadwal: zod.array(
+        zod.object({
+          id: zod.number(),
+          tanggalMulai: zod.date(),
+          tanggalSelesai: zod.date(),
+          waktuMulai: zod.string(),
+          waktuSelesai: zod.string(),
+          kategori: zod.string(),
+          judulKegiatan: zod.string().nullish(),
+          jumlahPeserta: zod.number(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/**
  * @summary Login user
  */
 export const LoginBody = zod.object({

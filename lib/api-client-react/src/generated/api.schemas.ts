@@ -37,7 +37,6 @@ export interface Jurusan {
   id: number;
   nama: string;
   kode: string;
-  grupJurusan?: string | null;
   createdAt: string;
 }
 
@@ -58,16 +57,10 @@ export interface User {
   nim?: string | null;
   nip?: string | null;
   noHp?: string | null;
-  noWa?: string | null;
-  callmebotKey?: string | null;
-  tandaTangan?: string | null;
   jurusanId?: number | null;
   jurusan?: Jurusan | null;
   laboratoriumId?: number | null;
   status: UserStatus;
-  isBlocked?: boolean;
-  catatanBlokir?: string | null;
-  mustSetupProfile?: boolean;
   createdAt: string;
 }
 
@@ -161,6 +154,43 @@ export interface Laboratorium {
   deskripsi?: string | null;
   fasilitas?: string | null;
   createdAt: string;
+}
+
+export interface PublicAlatKetersediaan {
+  id: number;
+  nama: string;
+  kode: string;
+  kondisi: string;
+  stok: number;
+  stokTersedia: number;
+  satuan: string;
+}
+
+export interface PublicJadwalKetersediaan {
+  id: number;
+  tanggalMulai: string;
+  tanggalSelesai: string;
+  waktuMulai: string;
+  waktuSelesai: string;
+  kategori: string;
+  judulKegiatan?: string | null;
+  jumlahPeserta: number;
+}
+
+export interface PublicLaboratoriumKetersediaan {
+  id: number;
+  nama: string;
+  kode: string;
+  lokasi: string;
+  kapasitas: number;
+  jurusanNama?: string | null;
+  alat: PublicAlatKetersediaan[];
+  jadwal: PublicJadwalKetersediaan[];
+}
+
+export interface PublicKetersediaanResponse {
+  generatedAt: string;
+  laboratorium: PublicLaboratoriumKetersediaan[];
 }
 
 export interface CreateLaboratoriumRequest {
@@ -507,7 +537,6 @@ export const GetUsersRole = {
 
 export type GetLaboratoriumParams = {
   jurusanId?: number;
-  grupJurusan?: string;
 };
 
 export type GetAlatParams = {

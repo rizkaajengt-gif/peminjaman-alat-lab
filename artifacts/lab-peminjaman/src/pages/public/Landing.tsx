@@ -1,7 +1,6 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, Microscope, CalendarClock, Beaker } from "lucide-react";
+import { ArrowRight, ShieldCheck, Microscope, CalendarClock, Beaker, ScanEye } from "lucide-react";
 
 export default function Landing() {
   return (
@@ -11,14 +10,24 @@ export default function Landing() {
         <div className="flex items-center gap-3">
           <img src={`${import.meta.env.BASE_URL}logo-poltekkes.png`} alt="Poltekkes Tasikmalaya" className="h-10 object-contain" />
         </div>
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            className="hidden items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground sm:flex"
+            data-testid="link-public-availability"
+            href="/ketersediaan"
+          >
+            <ScanEye className="h-4 w-4" />
+            Ketersediaan Lab
+          </Link>
+          <Link href="/login" className="text-sm font-semibold text-foreground hover:text-primary transition-colors" data-testid="link-login-header">
             Masuk
           </Link>
-          <Link href="/register">
-            <Button className="rounded-full px-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25">
-              Daftar Sekarang
-            </Button>
+          <Link
+            className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary/90"
+            data-testid="link-register-header"
+            href="/register"
+          >
+            Daftar Sekarang
           </Link>
         </div>
       </header>
@@ -59,15 +68,19 @@ export default function Landing() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/login">
-                  <Button size="lg" className="w-full sm:w-auto rounded-full px-8 h-14 text-base bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/25 hover:-translate-y-1 transition-all">
-                    Mulai Gunakan SIPELAB <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
+                <Link
+                  className="inline-flex h-14 w-full items-center justify-center rounded-full bg-primary px-8 text-base font-bold text-primary-foreground shadow-xl shadow-primary/25 transition-all hover:-translate-y-1 hover:bg-primary/90 sm:w-auto"
+                  data-testid="link-login-hero"
+                  href="/login"
+                >
+                  Mulai Gunakan SIPELAB <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                <Link href="/register">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full px-8 h-14 text-base border-2 hover:bg-secondary transition-all">
-                    Panduan Penggunaan
-                  </Button>
+                <Link
+                  className="inline-flex h-14 w-full items-center justify-center rounded-full border-2 border-primary/25 bg-card/50 px-8 text-base font-bold text-foreground transition-all hover:bg-secondary sm:w-auto"
+                  data-testid="link-register-guide"
+                  href="/register"
+                >
+                  Panduan Penggunaan
                 </Link>
               </div>
             </motion.div>
@@ -75,7 +88,7 @@ export default function Landing() {
         </section>
 
         {/* Features */}
-        <section className="py-24 bg-white relative z-10">
+        <section className="py-24 bg-card relative z-10">
           <div className="max-w-7xl mx-auto px-6 lg:px-12">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-display font-bold text-foreground mb-4">Fitur Utama</h2>

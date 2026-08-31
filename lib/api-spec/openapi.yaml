@@ -33,6 +33,8 @@ tags:
     description: Gallery management
   - name: dokumen
     description: Document management
+  - name: public
+    description: Public laboratory availability
   - name: laporan
     description: Reports
 paths:
@@ -48,6 +50,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /public/ketersediaan:
+    get:
+      operationId: getPublicKetersediaan
+      tags: [public]
+      summary: Get public laboratory availability
+      description: Returns laboratory information, equipment availability, and approved upcoming room schedules without authentication.
+      responses:
+        "200":
+          description: Public laboratory availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicKetersediaanResponse"
 
   /auth/login:
     post:
@@ -1368,6 +1384,87 @@ components:
           type: string
           format: date-time
       required: [id, nama, kode, lokasi, kapasitas, createdAt]
+
+    PublicKetersediaanResponse:
+      type: object
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        laboratorium:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicLaboratoriumKetersediaan"
+      required: [generatedAt, laboratorium]
+
+    PublicLaboratoriumKetersediaan:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kode:
+          type: string
+        lokasi:
+          type: string
+        kapasitas:
+          type: integer
+        jurusanNama:
+          type: string
+          nullable: true
+        alat:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicAlatKetersediaan"
+        jadwal:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicJadwalKetersediaan"
+      required: [id, nama, kode, lokasi, kapasitas, alat, jadwal]
+
+    PublicAlatKetersediaan:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kode:
+          type: string
+        kondisi:
+          type: string
+        stok:
+          type: integer
+        stokTersedia:
+          type: integer
+        satuan:
+          type: string
+      required: [id, nama, kode, kondisi, stok, stokTersedia, satuan]
+
+    PublicJadwalKetersediaan:
+      type: object
+      properties:
+        id:
+          type: integer
+        tanggalMulai:
+          type: string
+          format: date
+        tanggalSelesai:
+          type: string
+          format: date
+        waktuMulai:
+          type: string
+        waktuSelesai:
+          type: string
+        kategori:
+          type: string
+        judulKegiatan:
+          type: string
+          nullable: true
+        jumlahPeserta:
+          type: integer
+      required: [id, tanggalMulai, tanggalSelesai, waktuMulai, waktuSelesai, kategori, jumlahPeserta]
 
     CreateLaboratoriumRequest:
       type: object

@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./lib/auth-context";
 import { MainLayout } from "./components/layout/MainLayout";
 
 import Landing from "./pages/public/Landing";
+import Ketersediaan from "./pages/public/Ketersediaan";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import DashboardHome from "./pages/dashboard/Home";
@@ -66,6 +67,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/ketersediaan" component={Ketersediaan} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/setup-profil">{() => <SetupProfilRoute />}</Route>

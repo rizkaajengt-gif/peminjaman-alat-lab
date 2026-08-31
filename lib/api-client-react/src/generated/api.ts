@@ -55,6 +55,7 @@ import type {
   PeminjamanAlat,
   PeminjamanRuangan,
   PermintaanBahan,
+  PublicKetersediaanResponse,
   Statistik,
   UpdateStatusRequest,
   UpdateUserRequest,
@@ -138,6 +139,85 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns laboratory information, equipment availability, and approved upcoming room schedules without authentication.
+ * @summary Get public laboratory availability
+ */
+export const getGetPublicKetersediaanUrl = () => {
+  return `/api/public/ketersediaan`;
+};
+
+export const getPublicKetersediaan = async (
+  options?: RequestInit,
+): Promise<PublicKetersediaanResponse> => {
+  return customFetch<PublicKetersediaanResponse>(
+    getGetPublicKetersediaanUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetPublicKetersediaanQueryKey = () => {
+  return [`/api/public/ketersediaan`] as const;
+};
+
+export const getGetPublicKetersediaanQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPublicKetersediaan>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPublicKetersediaan>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPublicKetersediaanQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPublicKetersediaan>>
+  > = ({ signal }) => getPublicKetersediaan({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPublicKetersediaan>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPublicKetersediaanQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPublicKetersediaan>>
+>;
+export type GetPublicKetersediaanQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get public laboratory availability
+ */
+
+export function useGetPublicKetersediaan<
+  TData = Awaited<ReturnType<typeof getPublicKetersediaan>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPublicKetersediaan>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPublicKetersediaanQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
