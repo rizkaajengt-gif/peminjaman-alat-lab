@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Jurusan } from "./jurusan";
+import type { Laboratorium } from "./laboratorium";
 import type { UserRole } from "./userRole";
 import type { UserStatus } from "./userStatus";
 
@@ -20,6 +21,7 @@ export interface User {
   jurusanId?: number | null;
   jurusan?: Jurusan | null;
   laboratoriumId?: number | null;
+  laboratorium?: Laboratorium | null;
   status: UserStatus;
   createdAt: Date;
 }

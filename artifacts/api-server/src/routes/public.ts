@@ -66,7 +66,7 @@ router.get("/public/ketersediaan", async (req, res): Promise<void> => {
 
     res.json(response);
   } catch (error) {
-    req.log.error({ err: error }, "Failed to load public laboratory availability");
+    console.error("Failed to load public laboratory availability", error);
     res.status(500).json({ message: "Gagal memuat ketersediaan laboratorium" });
   }
 });

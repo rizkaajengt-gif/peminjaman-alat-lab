@@ -98,6 +98,20 @@ router.post("/galeri", requireAuth, requireRole("admin", "dosen", "plp"), async 
   }
 });
 
+router.put("/galeri/:id", requireAuth, requireRole("admin", "dosen", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { judul, deskripsi, tipe, url } = req.body;
+    if (!judul || !url || !["foto", "video"].includes(tipe)) { res.status(400).json({ message: "Judul, tipe, dan URL wajib diisi" }); return; }
+    const [item] = await db.update(galeriTable)
+      .set({ judul, deskripsi: deskripsi || null, tipe, url })
+      .where(eq(galeriTable.id, Number(req.params.id))).returning();
+    if (!item) { res.status(404).json({ message: "Galeri tidak ditemukan" }); return; }
+    res.json(item);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.delete("/galeri/:id", requireAuth, requireRole("admin", "dosen", "plp"), async (req: AuthRequest, res) => {
   try {
     await db.delete(galeriTable).where(eq(galeriTable.id, Number(req.params.id)));
@@ -128,6 +142,20 @@ router.post("/dokumen", requireAuth, requireRole("admin", "plp"), async (req: Au
     if (!nama || !url) { res.status(400).json({ message: "Data tidak lengkap" }); return; }
     const [item] = await db.insert(dokumenTable).values({ nama, deskripsi: deskripsi || null, url, tipe: tipe || null, laboratoriumId: laboratoriumId || null, uploaderId: req.user!.id }).returning();
     res.status(201).json(item);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.put("/dokumen/:id", requireAuth, requireRole("admin", "plp"), async (req: AuthRequest, res) => {
+  try {
+    const { nama, deskripsi, url, tipe, laboratoriumId } = req.body;
+    if (!nama || !url) { res.status(400).json({ message: "Nama dan URL wajib diisi" }); return; }
+    const [item] = await db.update(dokumenTable)
+      .set({ nama, deskripsi: deskripsi || null, url, tipe: tipe || null, laboratoriumId: laboratoriumId || null })
+      .where(eq(dokumenTable.id, Number(req.params.id))).returning();
+    if (!item) { res.status(404).json({ message: "Dokumen tidak ditemukan" }); return; }
+    res.json(item);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

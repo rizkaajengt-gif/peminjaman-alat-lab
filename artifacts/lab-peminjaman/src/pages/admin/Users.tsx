@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useGetUsers, useCreateUser, useUpdateUser, useDeleteUser, useVerifyUser, useGetJurusan } from "@workspace/api-client-react";
+import { useGetUsers, useCreateUser, useUpdateUser, useDeleteUser, useVerifyUser, useGetJurusan, useGetLaboratorium } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/ui-custom/PageHeader";
 import { StatusBadge } from "@/components/ui-custom/StatusBadge";
 import { Card } from "@/components/ui/card";
@@ -18,14 +18,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 10;
 
-const ROLES = ["admin", "mahasiswa", "plp", "gudang", "dosen"] as const;
-const ROLE_LABELS: Record<string, string> = { admin: "Admin", mahasiswa: "Mahasiswa", plp: "PLP", gudang: "Gudang", dosen: "Dosen" };
+const ROLES = ["admin", "mahasiswa", "plp", "gudang", "dosen", "kepala_laboratorium"] as const;
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", mahasiswa: "Mahasiswa", plp: "PLP", gudang: "Gudang", dosen: "Dosen", kepala_laboratorium: "Kepala Laboratorium" };
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-100 text-red-700 border-red-200",
   mahasiswa: "bg-blue-100 text-blue-700 border-blue-200",
   plp: "bg-purple-100 text-purple-700 border-purple-200",
   gudang: "bg-orange-100 text-orange-700 border-orange-200",
   dosen: "bg-green-100 text-green-700 border-green-200",
+  kepala_laboratorium: "bg-teal-100 text-teal-700 border-teal-200",
 };
 
 export default function AdminUsers() {
@@ -66,19 +67,20 @@ export default function AdminUsers() {
   const totalPages = Math.max(1, Math.ceil((users?.length || 0) / PAGE_SIZE));
   const pagedUsers = users?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const { data: jurusanList } = useGetJurusan();
+  const { data: laboratoriumList } = useGetLaboratorium({});
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
   const verifyMutation = useVerifyUser();
 
-  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", angkatan: "", jurusanId: "", status: "aktif" });
+  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", angkatan: "", jurusanId: "", laboratoriumId: "", status: "aktif" });
 
-  const openCreate = () => { setEditUser(null); setForm({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", angkatan: "", jurusanId: "", status: "aktif" }); setShowDialog(true); };
-  const openEdit = (u: any) => { setEditUser(u); setForm({ nama: u.nama, email: u.email, password: "", role: u.role, nim: u.nim || "", nip: u.nip || "", noHp: u.noHp || "", noWa: u.noWa || "", callmebotKey: u.callmebotKey || "", angkatan: u.angkatan || "", jurusanId: u.jurusanId?.toString() || "", status: u.status }); setShowDialog(true); };
+  const openCreate = () => { setEditUser(null); setForm({ nama: "", email: "", password: "", role: "mahasiswa", nim: "", nip: "", noHp: "", noWa: "", callmebotKey: "", angkatan: "", jurusanId: "", laboratoriumId: "", status: "aktif" }); setShowDialog(true); };
+  const openEdit = (u: any) => { setEditUser(u); setForm({ nama: u.nama, email: u.email, password: "", role: u.role, nim: u.nim || "", nip: u.nip || "", noHp: u.noHp || "", noWa: u.noWa || "", callmebotKey: u.callmebotKey || "", angkatan: u.angkatan || "", jurusanId: u.jurusanId?.toString() || "", laboratoriumId: u.laboratoriumId?.toString() || "", status: u.status }); setShowDialog(true); };
   const openChangePass = (u: any) => { setPassUserId(u.id); setPassUserName(u.nama); setNewPass(""); setConfirmPass(""); setShowPassDialog(true); };
 
   const handleSave = () => {
-    const payload: any = { nama: form.nama, email: form.email, role: form.role as any, nim: form.nim || null, nip: form.nip || null, noHp: form.noHp || null, noWa: form.noWa || null, callmebotKey: form.callmebotKey || null, angkatan: form.angkatan || null, jurusanId: form.jurusanId ? parseInt(form.jurusanId) : null, status: form.status as any };
+    const payload: any = { nama: form.nama, email: form.email, role: form.role as any, nim: form.nim || null, nip: form.nip || null, noHp: form.noHp || null, noWa: form.noWa || null, callmebotKey: form.callmebotKey || null, angkatan: form.angkatan || null, jurusanId: form.jurusanId ? parseInt(form.jurusanId) : null, laboratoriumId: form.laboratoriumId ? parseInt(form.laboratoriumId) : null, status: form.status as any };
     if (!editUser) payload.password = form.password;
     const mutation = editUser
       ? updateMutation.mutateAsync({ id: editUser.id, data: payload })
@@ -385,6 +387,19 @@ export default function AdminUsers() {
                 </SelectContent>
               </Select>
             </div>
+            {form.role === "kepala_laboratorium" && (
+              <div className="col-span-2 space-y-1.5 rounded-xl border border-teal-200 bg-teal-50/60 p-3">
+                <Label className="text-teal-800">Laboratorium yang Dipimpin</Label>
+                <Select value={form.laboratoriumId || "_none_"} onValueChange={v => setForm({...form, laboratoriumId: v === "_none_" ? "" : v})}>
+                  <SelectTrigger className="rounded-xl h-10 bg-white"><SelectValue placeholder="Pilih laboratorium" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none_">-- Pilih Laboratorium --</SelectItem>
+                    {laboratoriumList?.map(lab => <SelectItem key={lab.id} value={String(lab.id)}>{lab.nama} ({lab.kode})</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-teal-700">Akun ini hanya dapat meninjau pengajuan dan perpanjangan dari laboratorium yang dipilih.</p>
+              </div>
+            )}
             {form.role === "plp" && (
               <>
                 <div className="col-span-2 border-t pt-3">

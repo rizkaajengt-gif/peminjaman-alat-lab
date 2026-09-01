@@ -33,6 +33,8 @@ tags:
     description: Gallery management
   - name: dokumen
     description: Document management
+  - name: perpanjangan
+    description: Borrowing extension requests
   - name: public
     description: Public laboratory availability
   - name: laporan
@@ -132,7 +134,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [admin, mahasiswa, plp, gudang, dosen]
+            enum: [admin, mahasiswa, plp, gudang, dosen, kepala_laboratorium]
         - name: jurusanId
           in: query
           schema:
@@ -820,6 +822,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/PeminjamanRuangan"
 
+  /perpanjangan-peminjaman:
+    get:
+      operationId: getPerpanjanganPeminjaman
+      tags: [perpanjangan]
+      summary: Get borrowing extension requests
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [menunggu, disetujui, ditolak]
+      responses:
+        "200":
+          description: Extension requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PerpanjanganPeminjaman"
+
+    post:
+      operationId: createPerpanjanganPeminjaman
+      tags: [perpanjangan]
+      summary: Request a borrowing extension
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePerpanjanganPeminjamanRequest"
+      responses:
+        "201":
+          description: Extension request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerpanjanganPeminjaman"
+
+  /perpanjangan-peminjaman/{id}/status:
+    put:
+      operationId: updatePerpanjanganPeminjamanStatus
+      tags: [perpanjangan]
+      summary: Approve or reject a borrowing extension
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePerpanjanganStatusRequest"
+      responses:
+        "200":
+          description: Extension request updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerpanjanganPeminjaman"
+
   /permintaan-bahan:
     get:
       operationId: getPermintaanBahan
@@ -1060,6 +1126,30 @@ paths:
                 $ref: "#/components/schemas/Galeri"
 
   /galeri/{id}:
+    put:
+      operationId: updateGaleri
+      tags: [galeri]
+      summary: Update gallery item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGaleriRequest"
+      responses:
+        "200":
+          description: Gallery item updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Galeri"
+
     delete:
       operationId: deleteGaleri
       tags: [galeri]
@@ -1117,6 +1207,30 @@ paths:
                 $ref: "#/components/schemas/Dokumen"
 
   /dokumen/{id}:
+    put:
+      operationId: updateDokumen
+      tags: [dokumen]
+      summary: Update document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDokumenRequest"
+      responses:
+        "200":
+          description: Document updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dokumen"
+
     delete:
       operationId: deleteDokumen
       tags: [dokumen]
@@ -1245,7 +1359,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, mahasiswa, plp, gudang, dosen]
+          enum: [admin, mahasiswa, plp, gudang, dosen, kepala_laboratorium]
         nim:
           type: string
           nullable: true
@@ -1263,6 +1377,9 @@ components:
           nullable: true
         laboratoriumId:
           type: integer
+          nullable: true
+        laboratorium:
+          $ref: "#/components/schemas/Laboratorium"
           nullable: true
         status:
           type: string
@@ -1284,7 +1401,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, mahasiswa, plp, gudang, dosen]
+          enum: [admin, mahasiswa, plp, gudang, dosen, kepala_laboratorium]
         nim:
           type: string
           nullable: true
@@ -1312,7 +1429,7 @@ components:
           format: email
         role:
           type: string
-          enum: [admin, mahasiswa, plp, gudang, dosen]
+          enum: [admin, mahasiswa, plp, gudang, dosen, kepala_laboratorium]
         nim:
           type: string
           nullable: true
@@ -1671,6 +1788,82 @@ components:
                 type: integer
             required: [alatId, jumlah]
       required: [laboratoriumId, tanggalPinjam, tanggalKembali, keperluan, items]
+
+    PerpanjanganPeminjaman:
+      type: object
+      properties:
+        id:
+          type: integer
+        jenis:
+          type: string
+          enum: [alat, phantom]
+        peminjamanId:
+          type: integer
+        noPeminjaman:
+          type: string
+        pemohonId:
+          type: integer
+        pemohonNama:
+          type: string
+        pemohonNim:
+          type: string
+          nullable: true
+        laboratoriumNama:
+          type: string
+          nullable: true
+        tanggalPinjam:
+          type: string
+          format: date
+        tanggalKembaliLama:
+          type: string
+          format: date
+        tanggalKembaliBaru:
+          type: string
+          format: date
+        alasan:
+          type: string
+        status:
+          type: string
+          enum: [menunggu, disetujui, ditolak]
+        disetujuiOleh:
+          type: integer
+          nullable: true
+        catatan:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, jenis, peminjamanId, noPeminjaman, pemohonId, pemohonNama, tanggalPinjam, tanggalKembaliLama, tanggalKembaliBaru, alasan, status, createdAt, updatedAt]
+
+    CreatePerpanjanganPeminjamanRequest:
+      type: object
+      properties:
+        jenis:
+          type: string
+          enum: [alat, phantom]
+        peminjamanId:
+          type: integer
+        tanggalKembaliBaru:
+          type: string
+          format: date
+        alasan:
+          type: string
+      required: [jenis, peminjamanId, tanggalKembaliBaru, alasan]
+
+    UpdatePerpanjanganStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [disetujui, ditolak]
+        catatan:
+          type: string
+          nullable: true
+      required: [status]
 
     PeminjamanRuangan:
       type: object

@@ -268,10 +268,11 @@ router.get("/statistik-lab/export", requireAuth, requireRole("admin", "plp"), as
 
     const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const headers = ["No. Peminjaman", "Laboratorium", "Pemohon", "Jurusan Pemohon", "Kategori", "Judul Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "Waktu Mulai", "Waktu Selesai", "Jumlah Peserta", "Keperluan", "Status"];
+    const kategoriLabels: Record<string, string> = { pembelajaran: "Pembelajaran", penelitian: "Penelitian", pengabdian_masyarakat: "Pengabdian Masyarakat" };
     const rows = filtered.map(r => [
       r.noPeminjaman, r.laboratorium?.nama || "", r.user?.nama || "",
       (r.user as any)?.jurusan?.nama || "",
-      { pembelajaran: "Pembelajaran", penelitian: "Penelitian", pengabdian_masyarakat: "Pengabdian Masyarakat" }[(r as any).kategori] || (r as any).kategori || "",
+      kategoriLabels[(r as any).kategori] || (r as any).kategori || "",
       (r as any).judulKegiatan || "", r.tanggalMulai, r.tanggalSelesai,
       r.waktuMulai || "", r.waktuSelesai || "", String(r.jumlahPeserta), r.keperluan, r.status
     ]);

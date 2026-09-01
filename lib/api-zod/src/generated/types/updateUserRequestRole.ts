@@ -15,4 +15,5 @@ export const UpdateUserRequestRole = {
   plp: "plp",
   gudang: "gudang",
   dosen: "dosen",
+  kepala_laboratorium: "kepala_laboratorium",
 } as const;

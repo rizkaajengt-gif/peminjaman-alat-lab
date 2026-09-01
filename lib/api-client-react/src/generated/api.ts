@@ -31,6 +31,7 @@ import type {
   CreatePeminjamanAlatRequest,
   CreatePeminjamanRuanganRequest,
   CreatePermintaanBahanRequest,
+  CreatePerpanjanganPeminjamanRequest,
   CreateUserRequest,
   Dokumen,
   ErrorResponse,
@@ -45,6 +46,7 @@ import type {
   GetPeminjamanAlatParams,
   GetPeminjamanRuanganParams,
   GetPermintaanBahanParams,
+  GetPerpanjanganPeminjamanParams,
   GetUsersParams,
   HealthStatus,
   Jurusan,
@@ -55,8 +57,10 @@ import type {
   PeminjamanAlat,
   PeminjamanRuangan,
   PermintaanBahan,
+  PerpanjanganPeminjaman,
   PublicKetersediaanResponse,
   Statistik,
+  UpdatePerpanjanganStatusRequest,
   UpdateStatusRequest,
   UpdateUserRequest,
   User,
@@ -3260,6 +3264,296 @@ export const useUpdatePeminjamanRuanganStatus = <
 };
 
 /**
+ * @summary Get borrowing extension requests
+ */
+export const getGetPerpanjanganPeminjamanUrl = (
+  params?: GetPerpanjanganPeminjamanParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/perpanjangan-peminjaman?${stringifiedParams}`
+    : `/api/perpanjangan-peminjaman`;
+};
+
+export const getPerpanjanganPeminjaman = async (
+  params?: GetPerpanjanganPeminjamanParams,
+  options?: RequestInit,
+): Promise<PerpanjanganPeminjaman[]> => {
+  return customFetch<PerpanjanganPeminjaman[]>(
+    getGetPerpanjanganPeminjamanUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetPerpanjanganPeminjamanQueryKey = (
+  params?: GetPerpanjanganPeminjamanParams,
+) => {
+  return [`/api/perpanjangan-peminjaman`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetPerpanjanganPeminjamanQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPerpanjanganPeminjaman>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetPerpanjanganPeminjamanParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPerpanjanganPeminjaman>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetPerpanjanganPeminjamanQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPerpanjanganPeminjaman>>
+  > = ({ signal }) =>
+    getPerpanjanganPeminjaman(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPerpanjanganPeminjaman>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPerpanjanganPeminjamanQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPerpanjanganPeminjaman>>
+>;
+export type GetPerpanjanganPeminjamanQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get borrowing extension requests
+ */
+
+export function useGetPerpanjanganPeminjaman<
+  TData = Awaited<ReturnType<typeof getPerpanjanganPeminjaman>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetPerpanjanganPeminjamanParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPerpanjanganPeminjaman>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPerpanjanganPeminjamanQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Request a borrowing extension
+ */
+export const getCreatePerpanjanganPeminjamanUrl = () => {
+  return `/api/perpanjangan-peminjaman`;
+};
+
+export const createPerpanjanganPeminjaman = async (
+  createPerpanjanganPeminjamanRequest: CreatePerpanjanganPeminjamanRequest,
+  options?: RequestInit,
+): Promise<PerpanjanganPeminjaman> => {
+  return customFetch<PerpanjanganPeminjaman>(
+    getCreatePerpanjanganPeminjamanUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createPerpanjanganPeminjamanRequest),
+    },
+  );
+};
+
+export const getCreatePerpanjanganPeminjamanMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPerpanjanganPeminjaman>>,
+    TError,
+    { data: BodyType<CreatePerpanjanganPeminjamanRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPerpanjanganPeminjaman>>,
+  TError,
+  { data: BodyType<CreatePerpanjanganPeminjamanRequest> },
+  TContext
+> => {
+  const mutationKey = ["createPerpanjanganPeminjaman"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPerpanjanganPeminjaman>>,
+    { data: BodyType<CreatePerpanjanganPeminjamanRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createPerpanjanganPeminjaman(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePerpanjanganPeminjamanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPerpanjanganPeminjaman>>
+>;
+export type CreatePerpanjanganPeminjamanMutationBody =
+  BodyType<CreatePerpanjanganPeminjamanRequest>;
+export type CreatePerpanjanganPeminjamanMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Request a borrowing extension
+ */
+export const useCreatePerpanjanganPeminjaman = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPerpanjanganPeminjaman>>,
+    TError,
+    { data: BodyType<CreatePerpanjanganPeminjamanRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createPerpanjanganPeminjaman>>,
+  TError,
+  { data: BodyType<CreatePerpanjanganPeminjamanRequest> },
+  TContext
+> => {
+  return useMutation(getCreatePerpanjanganPeminjamanMutationOptions(options));
+};
+
+/**
+ * @summary Approve or reject a borrowing extension
+ */
+export const getUpdatePerpanjanganPeminjamanStatusUrl = (id: number) => {
+  return `/api/perpanjangan-peminjaman/${id}/status`;
+};
+
+export const updatePerpanjanganPeminjamanStatus = async (
+  id: number,
+  updatePerpanjanganStatusRequest: UpdatePerpanjanganStatusRequest,
+  options?: RequestInit,
+): Promise<PerpanjanganPeminjaman> => {
+  return customFetch<PerpanjanganPeminjaman>(
+    getUpdatePerpanjanganPeminjamanStatusUrl(id),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updatePerpanjanganStatusRequest),
+    },
+  );
+};
+
+export const getUpdatePerpanjanganPeminjamanStatusMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePerpanjanganPeminjamanStatus>>,
+    TError,
+    { id: number; data: BodyType<UpdatePerpanjanganStatusRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePerpanjanganPeminjamanStatus>>,
+  TError,
+  { id: number; data: BodyType<UpdatePerpanjanganStatusRequest> },
+  TContext
+> => {
+  const mutationKey = ["updatePerpanjanganPeminjamanStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePerpanjanganPeminjamanStatus>>,
+    { id: number; data: BodyType<UpdatePerpanjanganStatusRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updatePerpanjanganPeminjamanStatus(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePerpanjanganPeminjamanStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePerpanjanganPeminjamanStatus>>
+>;
+export type UpdatePerpanjanganPeminjamanStatusMutationBody =
+  BodyType<UpdatePerpanjanganStatusRequest>;
+export type UpdatePerpanjanganPeminjamanStatusMutationError =
+  ErrorType<unknown>;
+
+/**
+ * @summary Approve or reject a borrowing extension
+ */
+export const useUpdatePerpanjanganPeminjamanStatus = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePerpanjanganPeminjamanStatus>>,
+    TError,
+    { id: number; data: BodyType<UpdatePerpanjanganStatusRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePerpanjanganPeminjamanStatus>>,
+  TError,
+  { id: number; data: BodyType<UpdatePerpanjanganStatusRequest> },
+  TContext
+> => {
+  return useMutation(
+    getUpdatePerpanjanganPeminjamanStatusMutationOptions(options),
+  );
+};
+
+/**
  * @summary Get material request records
  */
 export const getGetPermintaanBahanUrl = (params?: GetPermintaanBahanParams) => {
@@ -4238,6 +4532,93 @@ export const useCreateGaleri = <
 };
 
 /**
+ * @summary Update gallery item
+ */
+export const getUpdateGaleriUrl = (id: number) => {
+  return `/api/galeri/${id}`;
+};
+
+export const updateGaleri = async (
+  id: number,
+  createGaleriRequest: CreateGaleriRequest,
+  options?: RequestInit,
+): Promise<Galeri> => {
+  return customFetch<Galeri>(getUpdateGaleriUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createGaleriRequest),
+  });
+};
+
+export const getUpdateGaleriMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateGaleri>>,
+    TError,
+    { id: number; data: BodyType<CreateGaleriRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateGaleri>>,
+  TError,
+  { id: number; data: BodyType<CreateGaleriRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateGaleri"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateGaleri>>,
+    { id: number; data: BodyType<CreateGaleriRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateGaleri(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateGaleriMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateGaleri>>
+>;
+export type UpdateGaleriMutationBody = BodyType<CreateGaleriRequest>;
+export type UpdateGaleriMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update gallery item
+ */
+export const useUpdateGaleri = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateGaleri>>,
+    TError,
+    { id: number; data: BodyType<CreateGaleriRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateGaleri>>,
+  TError,
+  { id: number; data: BodyType<CreateGaleriRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateGaleriMutationOptions(options));
+};
+
+/**
  * @summary Delete gallery item
  */
 export const getDeleteGaleriUrl = (id: number) => {
@@ -4499,6 +4880,93 @@ export const useCreateDokumen = <
   TContext
 > => {
   return useMutation(getCreateDokumenMutationOptions(options));
+};
+
+/**
+ * @summary Update document
+ */
+export const getUpdateDokumenUrl = (id: number) => {
+  return `/api/dokumen/${id}`;
+};
+
+export const updateDokumen = async (
+  id: number,
+  createDokumenRequest: CreateDokumenRequest,
+  options?: RequestInit,
+): Promise<Dokumen> => {
+  return customFetch<Dokumen>(getUpdateDokumenUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createDokumenRequest),
+  });
+};
+
+export const getUpdateDokumenMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateDokumen>>,
+    TError,
+    { id: number; data: BodyType<CreateDokumenRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateDokumen>>,
+  TError,
+  { id: number; data: BodyType<CreateDokumenRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateDokumen"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateDokumen>>,
+    { id: number; data: BodyType<CreateDokumenRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateDokumen(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateDokumenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateDokumen>>
+>;
+export type UpdateDokumenMutationBody = BodyType<CreateDokumenRequest>;
+export type UpdateDokumenMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update document
+ */
+export const useUpdateDokumen = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateDokumen>>,
+    TError,
+    { id: number; data: BodyType<CreateDokumenRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateDokumen>>,
+  TError,
+  { id: number; data: BodyType<CreateDokumenRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateDokumenMutationOptions(options));
 };
 
 /**

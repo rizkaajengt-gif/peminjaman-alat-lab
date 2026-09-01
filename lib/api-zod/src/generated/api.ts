@@ -68,7 +68,14 @@ export const LoginResponse = zod.object({
     id: zod.number(),
     nama: zod.string(),
     email: zod.string(),
-    role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+    role: zod.enum([
+      "admin",
+      "mahasiswa",
+      "plp",
+      "gudang",
+      "dosen",
+      "kepala_laboratorium",
+    ]),
     nim: zod.string().nullish(),
     nip: zod.string().nullish(),
     noHp: zod.string().nullish(),
@@ -82,6 +89,27 @@ export const LoginResponse = zod.object({
       })
       .nullish(),
     laboratoriumId: zod.number().nullish(),
+    laboratorium: zod
+      .object({
+        id: zod.number(),
+        nama: zod.string(),
+        kode: zod.string(),
+        lokasi: zod.string(),
+        kapasitas: zod.number(),
+        jurusanId: zod.number().nullish(),
+        jurusan: zod
+          .object({
+            id: zod.number(),
+            nama: zod.string(),
+            kode: zod.string(),
+            createdAt: zod.date(),
+          })
+          .nullish(),
+        deskripsi: zod.string().nullish(),
+        fasilitas: zod.string().nullish(),
+        createdAt: zod.date(),
+      })
+      .nullish(),
     status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
     createdAt: zod.date(),
   }),
@@ -102,7 +130,14 @@ export const GetMeResponse = zod.object({
   id: zod.number(),
   nama: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+  role: zod.enum([
+    "admin",
+    "mahasiswa",
+    "plp",
+    "gudang",
+    "dosen",
+    "kepala_laboratorium",
+  ]),
   nim: zod.string().nullish(),
   nip: zod.string().nullish(),
   noHp: zod.string().nullish(),
@@ -116,6 +151,27 @@ export const GetMeResponse = zod.object({
     })
     .nullish(),
   laboratoriumId: zod.number().nullish(),
+  laboratorium: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      kode: zod.string(),
+      lokasi: zod.string(),
+      kapasitas: zod.number(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      deskripsi: zod.string().nullish(),
+      fasilitas: zod.string().nullish(),
+      createdAt: zod.date(),
+    })
+    .nullish(),
   status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
   createdAt: zod.date(),
 });
@@ -124,7 +180,16 @@ export const GetMeResponse = zod.object({
  * @summary Get all users
  */
 export const GetUsersQueryParams = zod.object({
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]).optional(),
+  role: zod
+    .enum([
+      "admin",
+      "mahasiswa",
+      "plp",
+      "gudang",
+      "dosen",
+      "kepala_laboratorium",
+    ])
+    .optional(),
   jurusanId: zod.coerce.number().optional(),
   search: zod.coerce.string().optional(),
 });
@@ -133,7 +198,14 @@ export const GetUsersResponseItem = zod.object({
   id: zod.number(),
   nama: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+  role: zod.enum([
+    "admin",
+    "mahasiswa",
+    "plp",
+    "gudang",
+    "dosen",
+    "kepala_laboratorium",
+  ]),
   nim: zod.string().nullish(),
   nip: zod.string().nullish(),
   noHp: zod.string().nullish(),
@@ -147,6 +219,27 @@ export const GetUsersResponseItem = zod.object({
     })
     .nullish(),
   laboratoriumId: zod.number().nullish(),
+  laboratorium: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      kode: zod.string(),
+      lokasi: zod.string(),
+      kapasitas: zod.number(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      deskripsi: zod.string().nullish(),
+      fasilitas: zod.string().nullish(),
+      createdAt: zod.date(),
+    })
+    .nullish(),
   status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
   createdAt: zod.date(),
 });
@@ -159,7 +252,14 @@ export const CreateUserBody = zod.object({
   nama: zod.string(),
   email: zod.string().email(),
   password: zod.string(),
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+  role: zod.enum([
+    "admin",
+    "mahasiswa",
+    "plp",
+    "gudang",
+    "dosen",
+    "kepala_laboratorium",
+  ]),
   nim: zod.string().nullish(),
   nip: zod.string().nullish(),
   noHp: zod.string().nullish(),
@@ -178,7 +278,14 @@ export const GetUserByIdResponse = zod.object({
   id: zod.number(),
   nama: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+  role: zod.enum([
+    "admin",
+    "mahasiswa",
+    "plp",
+    "gudang",
+    "dosen",
+    "kepala_laboratorium",
+  ]),
   nim: zod.string().nullish(),
   nip: zod.string().nullish(),
   noHp: zod.string().nullish(),
@@ -192,6 +299,27 @@ export const GetUserByIdResponse = zod.object({
     })
     .nullish(),
   laboratoriumId: zod.number().nullish(),
+  laboratorium: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      kode: zod.string(),
+      lokasi: zod.string(),
+      kapasitas: zod.number(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      deskripsi: zod.string().nullish(),
+      fasilitas: zod.string().nullish(),
+      createdAt: zod.date(),
+    })
+    .nullish(),
   status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
   createdAt: zod.date(),
 });
@@ -206,7 +334,16 @@ export const UpdateUserParams = zod.object({
 export const UpdateUserBody = zod.object({
   nama: zod.string().optional(),
   email: zod.string().email().optional(),
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]).optional(),
+  role: zod
+    .enum([
+      "admin",
+      "mahasiswa",
+      "plp",
+      "gudang",
+      "dosen",
+      "kepala_laboratorium",
+    ])
+    .optional(),
   nim: zod.string().nullish(),
   nip: zod.string().nullish(),
   noHp: zod.string().nullish(),
@@ -219,7 +356,14 @@ export const UpdateUserResponse = zod.object({
   id: zod.number(),
   nama: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+  role: zod.enum([
+    "admin",
+    "mahasiswa",
+    "plp",
+    "gudang",
+    "dosen",
+    "kepala_laboratorium",
+  ]),
   nim: zod.string().nullish(),
   nip: zod.string().nullish(),
   noHp: zod.string().nullish(),
@@ -233,6 +377,27 @@ export const UpdateUserResponse = zod.object({
     })
     .nullish(),
   laboratoriumId: zod.number().nullish(),
+  laboratorium: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      kode: zod.string(),
+      lokasi: zod.string(),
+      kapasitas: zod.number(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      deskripsi: zod.string().nullish(),
+      fasilitas: zod.string().nullish(),
+      createdAt: zod.date(),
+    })
+    .nullish(),
   status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
   createdAt: zod.date(),
 });
@@ -264,7 +429,14 @@ export const VerifyUserResponse = zod.object({
   id: zod.number(),
   nama: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+  role: zod.enum([
+    "admin",
+    "mahasiswa",
+    "plp",
+    "gudang",
+    "dosen",
+    "kepala_laboratorium",
+  ]),
   nim: zod.string().nullish(),
   nip: zod.string().nullish(),
   noHp: zod.string().nullish(),
@@ -278,6 +450,27 @@ export const VerifyUserResponse = zod.object({
     })
     .nullish(),
   laboratoriumId: zod.number().nullish(),
+  laboratorium: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      kode: zod.string(),
+      lokasi: zod.string(),
+      kapasitas: zod.number(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      deskripsi: zod.string().nullish(),
+      fasilitas: zod.string().nullish(),
+      createdAt: zod.date(),
+    })
+    .nullish(),
   status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
   createdAt: zod.date(),
 });
@@ -744,7 +937,14 @@ export const GetPeminjamanAlatResponseItem = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -758,6 +958,27 @@ export const GetPeminjamanAlatResponseItem = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -876,7 +1097,14 @@ export const GetPeminjamanAlatByIdResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -890,6 +1118,27 @@ export const GetPeminjamanAlatByIdResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1002,7 +1251,14 @@ export const UpdatePeminjamanAlatStatusResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1016,6 +1272,27 @@ export const UpdatePeminjamanAlatStatusResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1119,7 +1396,14 @@ export const GetPeminjamanRuanganResponseItem = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1133,6 +1417,27 @@ export const GetPeminjamanRuanganResponseItem = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1203,7 +1508,14 @@ export const GetPeminjamanRuanganByIdResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1217,6 +1529,27 @@ export const GetPeminjamanRuanganByIdResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1284,7 +1617,14 @@ export const UpdatePeminjamanRuanganStatusResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1298,6 +1638,27 @@ export const UpdatePeminjamanRuanganStatusResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1337,6 +1698,78 @@ export const UpdatePeminjamanRuanganStatusResponse = zod.object({
 });
 
 /**
+ * @summary Get borrowing extension requests
+ */
+export const GetPerpanjanganPeminjamanQueryParams = zod.object({
+  status: zod.enum(["menunggu", "disetujui", "ditolak"]).optional(),
+});
+
+export const GetPerpanjanganPeminjamanResponseItem = zod.object({
+  id: zod.number(),
+  jenis: zod.enum(["alat", "phantom"]),
+  peminjamanId: zod.number(),
+  noPeminjaman: zod.string(),
+  pemohonId: zod.number(),
+  pemohonNama: zod.string(),
+  pemohonNim: zod.string().nullish(),
+  laboratoriumNama: zod.string().nullish(),
+  tanggalPinjam: zod.date(),
+  tanggalKembaliLama: zod.date(),
+  tanggalKembaliBaru: zod.date(),
+  alasan: zod.string(),
+  status: zod.enum(["menunggu", "disetujui", "ditolak"]),
+  disetujuiOleh: zod.number().nullish(),
+  catatan: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const GetPerpanjanganPeminjamanResponse = zod.array(
+  GetPerpanjanganPeminjamanResponseItem,
+);
+
+/**
+ * @summary Request a borrowing extension
+ */
+export const CreatePerpanjanganPeminjamanBody = zod.object({
+  jenis: zod.enum(["alat", "phantom"]),
+  peminjamanId: zod.number(),
+  tanggalKembaliBaru: zod.date(),
+  alasan: zod.string(),
+});
+
+/**
+ * @summary Approve or reject a borrowing extension
+ */
+export const UpdatePerpanjanganPeminjamanStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePerpanjanganPeminjamanStatusBody = zod.object({
+  status: zod.enum(["disetujui", "ditolak"]),
+  catatan: zod.string().nullish(),
+});
+
+export const UpdatePerpanjanganPeminjamanStatusResponse = zod.object({
+  id: zod.number(),
+  jenis: zod.enum(["alat", "phantom"]),
+  peminjamanId: zod.number(),
+  noPeminjaman: zod.string(),
+  pemohonId: zod.number(),
+  pemohonNama: zod.string(),
+  pemohonNim: zod.string().nullish(),
+  laboratoriumNama: zod.string().nullish(),
+  tanggalPinjam: zod.date(),
+  tanggalKembaliLama: zod.date(),
+  tanggalKembaliBaru: zod.date(),
+  alasan: zod.string(),
+  status: zod.enum(["menunggu", "disetujui", "ditolak"]),
+  disetujuiOleh: zod.number().nullish(),
+  catatan: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
  * @summary Get material request records
  */
 export const GetPermintaanBahanQueryParams = zod.object({
@@ -1357,7 +1790,14 @@ export const GetPermintaanBahanResponseItem = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1371,6 +1811,27 @@ export const GetPermintaanBahanResponseItem = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1459,7 +1920,14 @@ export const GetPermintaanBahanByIdResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1473,6 +1941,27 @@ export const GetPermintaanBahanByIdResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1556,7 +2045,14 @@ export const UpdatePermintaanBahanStatusResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1570,6 +2066,27 @@ export const UpdatePermintaanBahanStatusResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1643,7 +2160,14 @@ export const GetBeritaResponseItem = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1657,6 +2181,27 @@ export const GetBeritaResponseItem = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1694,7 +2239,14 @@ export const GetBeritaByIdResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1708,6 +2260,27 @@ export const GetBeritaByIdResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1741,7 +2314,14 @@ export const UpdateBeritaResponse = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1755,6 +2335,27 @@ export const UpdateBeritaResponse = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1793,7 +2394,14 @@ export const GetGaleriResponseItem = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1807,6 +2415,27 @@ export const GetGaleriResponseItem = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1823,6 +2452,81 @@ export const CreateGaleriBody = zod.object({
   deskripsi: zod.string().nullish(),
   tipe: zod.enum(["foto", "video"]),
   url: zod.string(),
+});
+
+/**
+ * @summary Update gallery item
+ */
+export const UpdateGaleriParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateGaleriBody = zod.object({
+  judul: zod.string(),
+  deskripsi: zod.string().nullish(),
+  tipe: zod.enum(["foto", "video"]),
+  url: zod.string(),
+});
+
+export const UpdateGaleriResponse = zod.object({
+  id: zod.number(),
+  judul: zod.string(),
+  deskripsi: zod.string().nullish(),
+  tipe: zod.enum(["foto", "video"]),
+  url: zod.string(),
+  uploaderId: zod.number(),
+  uploader: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      email: zod.string(),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
+      nim: zod.string().nullish(),
+      nip: zod.string().nullish(),
+      noHp: zod.string().nullish(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
+      createdAt: zod.date(),
+    })
+    .nullish(),
+  createdAt: zod.date(),
 });
 
 /**
@@ -1877,7 +2581,14 @@ export const GetDokumenResponseItem = zod.object({
       id: zod.number(),
       nama: zod.string(),
       email: zod.string(),
-      role: zod.enum(["admin", "mahasiswa", "plp", "gudang", "dosen"]),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
       nim: zod.string().nullish(),
       nip: zod.string().nullish(),
       noHp: zod.string().nullish(),
@@ -1891,6 +2602,27 @@ export const GetDokumenResponseItem = zod.object({
         })
         .nullish(),
       laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
       status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
       createdAt: zod.date(),
     })
@@ -1908,6 +2640,104 @@ export const CreateDokumenBody = zod.object({
   url: zod.string(),
   tipe: zod.string().nullish(),
   laboratoriumId: zod.number().nullish(),
+});
+
+/**
+ * @summary Update document
+ */
+export const UpdateDokumenParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateDokumenBody = zod.object({
+  nama: zod.string(),
+  deskripsi: zod.string().nullish(),
+  url: zod.string(),
+  tipe: zod.string().nullish(),
+  laboratoriumId: zod.number().nullish(),
+});
+
+export const UpdateDokumenResponse = zod.object({
+  id: zod.number(),
+  nama: zod.string(),
+  deskripsi: zod.string().nullish(),
+  url: zod.string(),
+  tipe: zod.string().nullish(),
+  laboratoriumId: zod.number().nullish(),
+  laboratorium: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      kode: zod.string(),
+      lokasi: zod.string(),
+      kapasitas: zod.number(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      deskripsi: zod.string().nullish(),
+      fasilitas: zod.string().nullish(),
+      createdAt: zod.date(),
+    })
+    .nullish(),
+  uploaderId: zod.number(),
+  uploader: zod
+    .object({
+      id: zod.number(),
+      nama: zod.string(),
+      email: zod.string(),
+      role: zod.enum([
+        "admin",
+        "mahasiswa",
+        "plp",
+        "gudang",
+        "dosen",
+        "kepala_laboratorium",
+      ]),
+      nim: zod.string().nullish(),
+      nip: zod.string().nullish(),
+      noHp: zod.string().nullish(),
+      jurusanId: zod.number().nullish(),
+      jurusan: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      laboratoriumId: zod.number().nullish(),
+      laboratorium: zod
+        .object({
+          id: zod.number(),
+          nama: zod.string(),
+          kode: zod.string(),
+          lokasi: zod.string(),
+          kapasitas: zod.number(),
+          jurusanId: zod.number().nullish(),
+          jurusan: zod
+            .object({
+              id: zod.number(),
+              nama: zod.string(),
+              kode: zod.string(),
+              createdAt: zod.date(),
+            })
+            .nullish(),
+          deskripsi: zod.string().nullish(),
+          fasilitas: zod.string().nullish(),
+          createdAt: zod.date(),
+        })
+        .nullish(),
+      status: zod.enum(["menunggu", "aktif", "nonaktif", "ditolak"]),
+      createdAt: zod.date(),
+    })
+    .nullish(),
+  createdAt: zod.date(),
 });
 
 /**

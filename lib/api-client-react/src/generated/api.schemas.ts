@@ -31,12 +31,26 @@ export const UserRole = {
   plp: "plp",
   gudang: "gudang",
   dosen: "dosen",
+  kepala_laboratorium: "kepala_laboratorium",
 } as const;
 
 export interface Jurusan {
   id: number;
   nama: string;
   kode: string;
+  createdAt: string;
+}
+
+export interface Laboratorium {
+  id: number;
+  nama: string;
+  kode: string;
+  lokasi: string;
+  kapasitas: number;
+  jurusanId?: number | null;
+  jurusan?: Jurusan | null;
+  deskripsi?: string | null;
+  fasilitas?: string | null;
   createdAt: string;
 }
 
@@ -60,6 +74,7 @@ export interface User {
   jurusanId?: number | null;
   jurusan?: Jurusan | null;
   laboratoriumId?: number | null;
+  laboratorium?: Laboratorium | null;
   status: UserStatus;
   createdAt: string;
 }
@@ -91,6 +106,7 @@ export const CreateUserRequestRole = {
   plp: "plp",
   gudang: "gudang",
   dosen: "dosen",
+  kepala_laboratorium: "kepala_laboratorium",
 } as const;
 
 export interface CreateUserRequest {
@@ -114,6 +130,7 @@ export const UpdateUserRequestRole = {
   plp: "plp",
   gudang: "gudang",
   dosen: "dosen",
+  kepala_laboratorium: "kepala_laboratorium",
 } as const;
 
 export type UpdateUserRequestStatus =
@@ -141,19 +158,6 @@ export interface UpdateUserRequest {
 export interface CreateJurusanRequest {
   nama: string;
   kode: string;
-}
-
-export interface Laboratorium {
-  id: number;
-  nama: string;
-  kode: string;
-  lokasi: string;
-  kapasitas: number;
-  jurusanId?: number | null;
-  jurusan?: Jurusan | null;
-  deskripsi?: string | null;
-  fasilitas?: string | null;
-  createdAt: string;
 }
 
 export interface PublicAlatKetersediaan {
@@ -313,6 +317,71 @@ export interface CreatePeminjamanAlatRequest {
   tanggalKembali: string;
   keperluan: string;
   items: CreatePeminjamanAlatRequestItemsItem[];
+}
+
+export type PerpanjanganPeminjamanJenis =
+  (typeof PerpanjanganPeminjamanJenis)[keyof typeof PerpanjanganPeminjamanJenis];
+
+export const PerpanjanganPeminjamanJenis = {
+  alat: "alat",
+  phantom: "phantom",
+} as const;
+
+export type PerpanjanganPeminjamanStatus =
+  (typeof PerpanjanganPeminjamanStatus)[keyof typeof PerpanjanganPeminjamanStatus];
+
+export const PerpanjanganPeminjamanStatus = {
+  menunggu: "menunggu",
+  disetujui: "disetujui",
+  ditolak: "ditolak",
+} as const;
+
+export interface PerpanjanganPeminjaman {
+  id: number;
+  jenis: PerpanjanganPeminjamanJenis;
+  peminjamanId: number;
+  noPeminjaman: string;
+  pemohonId: number;
+  pemohonNama: string;
+  pemohonNim?: string | null;
+  laboratoriumNama?: string | null;
+  tanggalPinjam: string;
+  tanggalKembaliLama: string;
+  tanggalKembaliBaru: string;
+  alasan: string;
+  status: PerpanjanganPeminjamanStatus;
+  disetujuiOleh?: number | null;
+  catatan?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreatePerpanjanganPeminjamanRequestJenis =
+  (typeof CreatePerpanjanganPeminjamanRequestJenis)[keyof typeof CreatePerpanjanganPeminjamanRequestJenis];
+
+export const CreatePerpanjanganPeminjamanRequestJenis = {
+  alat: "alat",
+  phantom: "phantom",
+} as const;
+
+export interface CreatePerpanjanganPeminjamanRequest {
+  jenis: CreatePerpanjanganPeminjamanRequestJenis;
+  peminjamanId: number;
+  tanggalKembaliBaru: string;
+  alasan: string;
+}
+
+export type UpdatePerpanjanganStatusRequestStatus =
+  (typeof UpdatePerpanjanganStatusRequestStatus)[keyof typeof UpdatePerpanjanganStatusRequestStatus];
+
+export const UpdatePerpanjanganStatusRequestStatus = {
+  disetujui: "disetujui",
+  ditolak: "ditolak",
+} as const;
+
+export interface UpdatePerpanjanganStatusRequest {
+  status: UpdatePerpanjanganStatusRequestStatus;
+  catatan?: string | null;
 }
 
 export type PeminjamanRuanganStatus =
@@ -533,6 +602,7 @@ export const GetUsersRole = {
   plp: "plp",
   gudang: "gudang",
   dosen: "dosen",
+  kepala_laboratorium: "kepala_laboratorium",
 } as const;
 
 export type GetLaboratoriumParams = {
@@ -584,6 +654,19 @@ export const GetPeminjamanRuanganStatus = {
   disetujui: "disetujui",
   ditolak: "ditolak",
   selesai: "selesai",
+} as const;
+
+export type GetPerpanjanganPeminjamanParams = {
+  status?: GetPerpanjanganPeminjamanStatus;
+};
+
+export type GetPerpanjanganPeminjamanStatus =
+  (typeof GetPerpanjanganPeminjamanStatus)[keyof typeof GetPerpanjanganPeminjamanStatus];
+
+export const GetPerpanjanganPeminjamanStatus = {
+  menunggu: "menunggu",
+  disetujui: "disetujui",
+  ditolak: "ditolak",
 } as const;
 
 export type GetPermintaanBahanParams = {

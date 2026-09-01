@@ -9,6 +9,7 @@ import {
   Users,
   Database,
   CalendarDays,
+  CalendarClock,
   FileBox,
   Newspaper,
   BarChart3,
@@ -61,13 +62,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "mahasiswa", "plp", "gudang", "dosen"] },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "mahasiswa", "plp", "gudang", "dosen", "kepala_laboratorium"] },
 
   // Admin group - Master Data
   { title: "Data Pengguna", href: "/admin/users", icon: Users, roles: ["admin"], group: "Master Data" },
   { title: "Data Jurusan", href: "/admin/jurusan", icon: GraduationCap, roles: ["admin"], group: "Master Data" },
   { title: "Data Laboratorium", href: "/admin/laboratorium", icon: Building2, roles: ["admin"], group: "Master Data" },
   { title: "Penugasan PLP", href: "/admin/plp-penugasan", icon: UserCog, roles: ["admin"], group: "Master Data" },
+  { title: "Konten Institusi", href: "/admin/konten", icon: Newspaper, roles: ["admin"], group: "Master Data" },
 
   // Admin group - Operasional
   { title: "Inventaris Alat & Bahan", href: "/admin/inventaris", icon: Database, roles: ["admin", "plp"], group: "Operasional" },
@@ -75,6 +77,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: "Riwayat & Pengembalian", href: "/plp/pengembalian", icon: FileBox, roles: ["plp", "admin"], group: "Operasional" },
   { title: "Laporan & Statistik", href: "/admin/laporan", icon: BarChart3, roles: ["admin"], group: "Operasional" },
   { title: "Kirim Notifikasi", href: "/admin/notifikasi", icon: BellRing, roles: ["admin"], group: "Operasional" },
+  { title: "Perpanjangan Peminjaman", href: "/perpanjangan", icon: CalendarClock, roles: ["admin", "plp", "kepala_laboratorium"], group: "Operasional" },
   { title: "Laporan Lab Saya", href: "/plp/laporan", icon: BarChart3, roles: ["plp"], group: "Operasional" },
   { title: "Stok Lab & Transfer", href: "/plp/stok", icon: Package, roles: ["plp"], group: "Operasional" },
 
@@ -85,6 +88,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: "Jadwal Ruangan", href: "/jadwal-ruangan", icon: CalendarDays, roles: ["mahasiswa", "dosen", "plp", "admin"], group: "Layanan" },
   { title: "Minta Bahan", href: "/mahasiswa/permintaan", icon: FlaskConical, roles: ["mahasiswa", "plp", "dosen"], group: "Layanan" },
   { title: "Riwayat Saya", href: "/mahasiswa/riwayat", icon: FileBox, roles: ["mahasiswa", "dosen"], group: "Layanan" },
+  { title: "Ajukan Perpanjangan", href: "/perpanjangan", icon: CalendarClock, roles: ["mahasiswa", "dosen"], group: "Layanan" },
 
   // Gudang group
   { title: "Stok & Verifikasi Bahan", href: "/gudang/manajemen", icon: Warehouse, roles: ["gudang", "admin"], group: "Gudang" },

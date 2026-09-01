@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { jurusanTable } from "./jurusan";
 import { laboratoriumTable } from "./laboratorium";
 
-export const roleEnum = pgEnum("role", ["admin", "mahasiswa", "plp", "gudang", "dosen"]);
+export const roleEnum = pgEnum("role", ["admin", "mahasiswa", "plp", "gudang", "dosen", "kepala_laboratorium"]);
 export const userStatusEnum = pgEnum("user_status", ["menunggu", "aktif", "nonaktif", "ditolak"]);
 
 export const usersTable = pgTable("users", {

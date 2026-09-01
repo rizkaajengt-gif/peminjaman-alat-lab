@@ -19,6 +19,7 @@ import transferBahanRouter from "./transfer-bahan.js";
 import phantomRouter from "./phantom.js";
 import peminjamanPhantomRouter from "./peminjaman-phantom.js";
 import publicRouter from "./public.js";
+import perpanjanganPeminjamanRouter from "./perpanjangan-peminjaman.js";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use("/transfer-bahan", transferBahanRouter);
 router.use("/phantom", phantomRouter);
 router.use("/peminjaman-phantom", peminjamanPhantomRouter);
 router.use(publicRouter);
+router.use("/perpanjangan-peminjaman", perpanjanganPeminjamanRouter);
 
 export default router;

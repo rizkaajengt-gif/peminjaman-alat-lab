@@ -284,7 +284,7 @@ router.post("/phantom", requireAuth, requireRole("admin", "plp"), async (req: Au
       }
       try {
         await db.insert(phantomTable).values({
-          kode: kode || null, nama,
+          kode: kode || `PH-${Date.now()}-${berhasil}`, nama,
           deskripsi: deskripsi || null,
           kondisi: (kondisi || "baik") as any,
           stok: parseInt(stok) || 0, stokTersedia: parseInt(stok) || 0,

@@ -20,7 +20,7 @@ router.get("/", requireAuth, requireRole("admin", "plp"), async (req: AuthReques
 
     let users = await db.query.usersTable.findMany({
       where: conditions.length > 0 ? and(...conditions) : undefined,
-      with: { jurusan: true },
+      with: { jurusan: true, laboratorium: true },
     });
 
     if (search) {
@@ -36,9 +36,13 @@ router.get("/", requireAuth, requireRole("admin", "plp"), async (req: AuthReques
 
 router.post("/", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
   try {
-    const { nama, email, password, role, nim, nip, noHp, jurusanId, laboratoriumId } = req.body;
+    const { nama, email, password, role, nim, nip, noHp, noWa, callmebotKey, angkatan, jurusanId, laboratoriumId } = req.body;
     if (!nama || !email || !password || !role) {
       res.status(400).json({ message: "Data tidak lengkap" });
+      return;
+    }
+    if (role === "kepala_laboratorium" && !laboratoriumId) {
+      res.status(400).json({ message: "Kepala laboratorium wajib ditugaskan ke laboratorium" });
       return;
     }
 
@@ -52,6 +56,7 @@ router.post("/", requireAuth, requireRole("admin"), async (req: AuthRequest, res
       nama, email,
       password: hashPassword(password),
       role, nim: nim || null, nip: nip || null, noHp: noHp || null,
+      noWa: noWa || null, callmebotKey: callmebotKey || null, angkatan: angkatan || null,
       jurusanId: jurusanId || null,
       laboratoriumId: laboratoriumId || null,
       status: "aktif",
@@ -69,7 +74,7 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
   try {
     const user = await db.query.usersTable.findFirst({
       where: eq(usersTable.id, Number(req.params.id)),
-      with: { jurusan: true },
+      with: { jurusan: true, laboratorium: true },
     });
     if (!user) { res.status(404).json({ message: "User tidak ditemukan" }); return; }
     const { password: _, ...rest } = user;
@@ -81,9 +86,13 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
 
 router.put("/:id", requireAuth, requireRole("admin"), async (req: AuthRequest, res) => {
   try {
-    const { nama, email, role, nim, nip, noHp, noWa, callmebotKey, jurusanId, laboratoriumId, status } = req.body;
+    const { nama, email, role, nim, nip, noHp, noWa, callmebotKey, angkatan, jurusanId, laboratoriumId, status } = req.body;
+    if (role === "kepala_laboratorium" && !laboratoriumId) {
+      res.status(400).json({ message: "Kepala laboratorium wajib ditugaskan ke laboratorium" });
+      return;
+    }
     const [user] = await db.update(usersTable)
-      .set({ nama, email, role, nim: nim || null, nip: nip || null, noHp: noHp || null, noWa: noWa || null, callmebotKey: callmebotKey || null, jurusanId: jurusanId || null, laboratoriumId: laboratoriumId || null, status, updatedAt: new Date() })
+      .set({ nama, email, role, nim: nim || null, nip: nip || null, noHp: noHp || null, noWa: noWa || null, callmebotKey: callmebotKey || null, angkatan: angkatan || null, jurusanId: jurusanId || null, laboratoriumId: laboratoriumId || null, status, updatedAt: new Date() })
       .where(eq(usersTable.id, Number(req.params.id)))
       .returning();
     if (!user) { res.status(404).json({ message: "User tidak ditemukan" }); return; }
