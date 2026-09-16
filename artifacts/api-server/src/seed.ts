@@ -45,6 +45,16 @@ export async function seedDefaultAdmin() {
         "updated_at" timestamp NOT NULL DEFAULT now()
       )
     `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "reminder_wa" (
+        "id" serial PRIMARY KEY,
+        "kunci" text NOT NULL UNIQUE,
+        "jenis" text NOT NULL,
+        "peminjaman_id" integer NOT NULL,
+        "tanggal_kembali" text NOT NULL,
+        "sent_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
 
     // Ensure default admin exists
     const existing = await db

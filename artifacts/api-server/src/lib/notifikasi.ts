@@ -66,6 +66,17 @@ export function formatPesanStatusPeminjaman(opts: {
   return msg;
 }
 
+export function formatPesanReminderPengembalian(opts: {
+  jenis: "alat" | "phantom";
+  noPeminjaman: string;
+  namaPeminjam: string;
+  laboratorium?: string | null;
+  tanggalKembali: string;
+}): string {
+  const jenisLabel = opts.jenis === "alat" ? "alat" : "phantom";
+  return `⏰ *SIPELAB - Pengingat Pengembalian*\n\nHalo ${opts.namaPeminjam}, peminjaman ${jenisLabel} dengan nomor ${opts.noPeminjaman} jatuh tempo besok (${opts.tanggalKembali}).${opts.laboratorium ? `\nLaboratorium: ${opts.laboratorium}` : ""}\n\nMohon siapkan dan kembalikan sesuai prosedur SIPELAB.`;
+}
+
 export function formatPesanPeminjamanRuangan(opts: {
   noPeminjaman: string;
   namaPeminjam: string;
