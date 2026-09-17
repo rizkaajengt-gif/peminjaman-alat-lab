@@ -2,21 +2,21 @@
   "version": 2,
   "builds": [
     {
-      "src": "artifacts/api-server/src/index.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     },
     {
       "src": "artifacts/lab-peminjaman/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist/public"
+        "distDir": "dist"
       }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "artifacts/api-server/src/index.ts"
+      "dest": "api/index.ts"
     },
     {
       "src": "/(.*)",
