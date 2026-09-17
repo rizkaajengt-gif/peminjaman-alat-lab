@@ -12,5 +12,5 @@
     "noImplicitAny": false,
     "types": ["node"]
   },
-  "include": ["**/*.ts", "../artifacts/api-server/src/**/*"]
+  "include": ["index.ts"]
 }
